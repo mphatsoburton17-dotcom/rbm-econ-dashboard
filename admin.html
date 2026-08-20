@@ -6,9 +6,35 @@
 <title>Admin — Malawi Economic Indicators</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+  .adm-wrap { max-width: 900px; margin: 0 auto; padding: 20px 14px 60px; }
+  .adm-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .adm-tab { padding: 8px 14px; border-radius: 20px; border: 1px solid #ECE4D2; background: #fff; font-size: 12px; font-weight: 700; color: #8F6620; cursor: pointer; }
+  .adm-tab.active { background: #8F6620; color: #fff; }
+  .adm-section { display: none; background: #fff; border: 1px solid #ECE4D2; border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; }
+  .adm-section.active { display: block; }
+  .adm-section h3 { font-family: 'Fraunces'; margin-bottom: 6px; color: #8F6620; }
+  .adm-section .sub { font-size: 12px; color: #9a8f74; margin-bottom: 16px; }
+  .adm-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .adm-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
+  .adm-field label { font-size: 10.5px; font-weight: 700; color: #7a6f52; text-transform: uppercase; }
+  .adm-field input, .adm-field textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid #ECE4D2; font-size: 13px; font-family: 'Inter'; }
+  .adm-btn { padding: 10px 18px; border-radius: 8px; border: none; background: #8F6620; color: #fff; font-weight: 700; cursor: pointer; font-size: 13px; }
+  .adm-btn.danger { background: #C43D3D; }
+  .adm-btn.secondary { background: #B8862B; }
+  .adm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+  .adm-table th, .adm-table td { text-align: left; padding: 8px; border-bottom: 1px solid #ECE4D2; }
+  .adm-table th { color: #7a6f52; font-size: 10.5px; text-transform: uppercase; }
+  .adm-msg { font-size: 12.5px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; }
+  .adm-msg.ok { background: #E6F4EA; color: #2E8B45; }
+  .adm-msg.err { background: #FBE9E9; color: #C43D3D; }
+  .adm-stat { display: inline-block; background: #FAF6EC; border-radius: 10px; padding: 14px 18px; margin-right: 10px; margin-bottom: 10px; }
+  .adm-stat .n { font-family: 'Fraunces'; font-size: 24px; font-weight: 800; color: #8F6620; }
+  .adm-stat .l { font-size: 11px; color: #7a6f52; text-transform: uppercase; }
+</style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap adm-wrap">
 
   <!-- LOGIN -->
   <div class="admin-box" id="loginBox">
@@ -19,47 +45,215 @@
     <div id="loginMsg"></div>
   </div>
 
-  <!-- ADD ENTRY FORM (hidden until logged in) -->
-  <div class="admin-box" id="entryBox" style="display:none;">
-    <h3>Add / Update This Month's Data</h3>
-    <label>Month (e.g. 2026-08)</label>
-    <input type="text" id="fMonth" placeholder="2026-08">
-    <label>Label (e.g. Aug 2026)</label>
-    <input type="text" id="fLabel" placeholder="Aug 2026">
-    <label>Headline Inflation (%)</label>
-    <input type="number" step="0.1" id="fHeadline">
-    <label>Food Inflation (%) — leave blank if unknown</label>
-    <input type="number" step="0.1" id="fFood">
-    <label>Non-Food Inflation (%) — leave blank if unknown</label>
-    <input type="number" step="0.1" id="fNonFood">
-    <label>Source (e.g. RBM/NSO CPI Release, Aug 2026)</label>
-    <input type="text" id="fSource">
-    <button onclick="saveEntry()">Save this month's entry</button>
-    <div id="entryMsg"></div>
-  </div>
+  <!-- ADMIN PANEL -->
+  <div id="panel" style="display:none;">
 
+    <h2 style="font-family:'Fraunces'; margin-bottom:14px;">Admin Panel</h2>
+
+    <div class="adm-tabs">
+      <button class="adm-tab active" onclick="showTab('overview', this)">Overview</button>
+      <button class="adm-tab" onclick="showTab('monthly', this)">Monthly Entry</button>
+      <button class="adm-tab" onclick="showTab('history', this)">History</button>
+      <button class="adm-tab" onclick="showTab('other', this)">Other Indicators</button>
+      <button class="adm-tab" onclick="showTab('yearly', this)">Yearly Averages</button>
+      <button class="adm-tab" onclick="showTab('explainer', this)">Explainer Text</button>
+      <button class="adm-tab" onclick="showTab('faq', this)">FAQ Inbox</button>
+      <button class="adm-tab" onclick="showTab('contact', this)">Contact & Settings</button>
+      <button class="adm-tab" onclick="showTab('bulk', this)">Import / Export</button>
+    </div>
+
+    <!-- 1. OVERVIEW -->
+    <div class="adm-section active" id="tab-overview">
+      <h3>Overview</h3>
+      <div class="sub">Quick status of the dashboard's data.</div>
+      <div id="overviewStats"></div>
+      <div id="overviewWarning"></div>
+    </div>
+
+    <!-- 2. MONTHLY ENTRY -->
+    <div class="adm-section" id="tab-monthly">
+      <h3>Add / Update This Month's Data</h3>
+      <div class="sub">Once a month, enter the new RBM/NSO release here.</div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Month (e.g. 2026-08)</label><input id="fMonth" placeholder="2026-08"></div>
+        <div class="adm-field"><label>Label (e.g. Aug 2026)</label><input id="fLabel" placeholder="Aug 2026"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Headline Inflation (%)</label><input type="number" step="0.1" id="fHeadline"></div>
+        <div class="adm-field"><label>Food Inflation (%)</label><input type="number" step="0.1" id="fFood"></div>
+        <div class="adm-field"><label>Non-Food Inflation (%)</label><input type="number" step="0.1" id="fNonFood"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Source</label><input id="fSource" placeholder="RBM/NSO CPI Release, Aug 2026"></div>
+      </div>
+      <button class="adm-btn" onclick="saveEntry()">Save this month's entry</button>
+      <div id="entryMsg"></div>
+    </div>
+
+    <!-- 3. HISTORY -->
+    <div class="adm-section" id="tab-history">
+      <h3>Entry History</h3>
+      <div class="sub">All saved months. Edit loads it into the Monthly Entry tab; Delete removes it.</div>
+      <table class="adm-table">
+        <thead><tr><th>Month</th><th>Headline</th><th>Food</th><th>Non-Food</th><th></th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 4. OTHER INDICATORS -->
+    <div class="adm-section" id="tab-other">
+      <h3>Other Indicators</h3>
+      <div class="sub">These feed the "Monetary Policy Rates" and "Urban vs Rural" panels on the public site.</div>
+
+      <h4 style="margin:14px 0 8px; font-size:13px; color:#7a6f52;">Policy Rates</h4>
+      <div class="adm-row">
+        <div class="adm-field"><label>Policy Rate (%)</label><input type="number" step="0.1" id="pRate"></div>
+        <div class="adm-field"><label>Lombard Rate (%)</label><input type="number" step="0.1" id="pLombard"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Liquidity Reserve — Local (%)</label><input type="number" step="0.1" id="pLocal"></div>
+        <div class="adm-field"><label>Liquidity Reserve — Foreign (%)</label><input type="number" step="0.1" id="pForeign"></div>
+        <div class="adm-field"><label>Money Supply Growth (%)</label><input type="number" step="0.1" id="pMoney"></div>
+      </div>
+      <button class="adm-btn" onclick="savePolicyRates()">Save Policy Rates</button>
+      <div id="policyMsg"></div>
+
+      <h4 style="margin:20px 0 8px; font-size:13px; color:#7a6f52;">Urban vs Rural</h4>
+      <div class="adm-row">
+        <div class="adm-field"><label>Urban — Monthly (%)</label><input type="number" step="0.1" id="uMonthly"></div>
+        <div class="adm-field"><label>Urban — Food (%)</label><input type="number" step="0.1" id="uFood"></div>
+        <div class="adm-field"><label>Urban — Non-Food (%)</label><input type="number" step="0.1" id="uNonFood"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Rural — Monthly (%)</label><input type="number" step="0.1" id="rMonthly"></div>
+        <div class="adm-field"><label>Rural — Food (%)</label><input type="number" step="0.1" id="rFood"></div>
+        <div class="adm-field"><label>Rural — Non-Food (%)</label><input type="number" step="0.1" id="rNonFood"></div>
+      </div>
+      <button class="adm-btn" onclick="saveUrbanRural()">Save Urban/Rural</button>
+      <div id="urMsg"></div>
+
+      <h4 style="margin:20px 0 8px; font-size:13px; color:#7a6f52;">Growth Outlook</h4>
+      <div class="adm-row">
+        <div class="adm-field"><label>2026 Growth Projection (%)</label><input type="number" step="0.1" id="gProjection"></div>
+        <div class="adm-field"><label>Previous Projection (%)</label><input type="number" step="0.1" id="gPrevious"></div>
+      </div>
+      <button class="adm-btn" onclick="saveGrowth()">Save Growth Outlook</button>
+      <div id="growthMsg"></div>
+    </div>
+
+    <!-- 5. YEARLY AVERAGES -->
+    <div class="adm-section" id="tab-yearly">
+      <h3>Yearly Averages</h3>
+      <div class="sub">Feeds the Multi-Year chart. One row per year.</div>
+      <table class="adm-table">
+        <thead><tr><th>Year</th><th>Average (%)</th><th>Source</th><th></th></tr></thead>
+        <tbody id="yearlyBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Year</label><input id="yYear" placeholder="2027"></div>
+        <div class="adm-field"><label>Average (%)</label><input type="number" step="0.1" id="yAvg"></div>
+        <div class="adm-field"><label>Source</label><input id="ySource" placeholder="World Bank / IMF"></div>
+      </div>
+      <button class="adm-btn" onclick="addYearlyRow()">Add Year</button>
+      <button class="adm-btn secondary" onclick="saveYearly()">Save All Yearly Averages</button>
+      <div id="yearlyMsg"></div>
+    </div>
+
+    <!-- 6. EXPLAINER -->
+    <div class="adm-section" id="tab-explainer">
+      <h3>"What This Means" Text</h3>
+      <div class="sub">Shown under the Urban vs Rural chart on the public dashboard.</div>
+      <textarea id="explainerBox" rows="6" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:'Inter'; font-size:13px;"></textarea>
+      <div style="margin-top:10px;"><button class="adm-btn" onclick="saveExplainer()">Save Text</button></div>
+      <div id="explainerMsg"></div>
+    </div>
+
+    <!-- 7. FAQ INBOX -->
+    <div class="adm-section" id="tab-faq">
+      <h3>FAQ / Questions Inbox</h3>
+      <div class="sub">Questions visitors typed into the chat widget.</div>
+      <table class="adm-table">
+        <thead><tr><th>When</th><th>Question</th><th></th></tr></thead>
+        <tbody id="faqBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 8. CONTACT & SETTINGS -->
+    <div class="adm-section" id="tab-contact">
+      <h3>Contact & Settings</h3>
+      <div class="sub">Shown in the footer across the whole site.</div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Email</label><input id="cEmail"></div>
+        <div class="adm-field"><label>Phone / Toll-free</label><input id="cPhone"></div>
+        <div class="adm-field"><label>Website</label><input id="cWebsite"></div>
+      </div>
+      <button class="adm-btn" onclick="saveContact()">Save Contact Info</button>
+      <div id="contactMsg"></div>
+    </div>
+
+    <!-- 9. BULK IMPORT/EXPORT -->
+    <div class="adm-section" id="tab-bulk">
+      <h3>Bulk Import / Export</h3>
+      <div class="sub">Paste CSV rows (month,label,headline,food,nonFood,source) to import many months at once, or download everything as CSV.</div>
+      <textarea id="bulkBox" rows="6" placeholder="2026-08,Aug 2026,20.1,13.8,31.9,RBM/NSO CPI Release" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="adm-btn" onclick="bulkImport()">Import Rows</button>
+        <button class="adm-btn secondary" onclick="exportCsv()">Export All as CSV</button>
+      </div>
+      <div id="bulkMsg"></div>
+    </div>
+
+  </div>
 </div>
+
 <script>
   let adminPassword = '';
 
   async function login() {
     const password = document.getElementById('loginPassword').value;
     const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
     });
     const data = await res.json();
-    const msg = document.getElementById('loginMsg');
     if (data.ok) {
       adminPassword = password;
       document.getElementById('loginBox').style.display = 'none';
-      document.getElementById('entryBox').style.display = 'block';
+      document.getElementById('panel').style.display = 'block';
+      loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
     } else {
-      msg.innerHTML = '<div class="admin-msg err">Incorrect password.</div>';
+      document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
     }
   }
 
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'x-admin-password': adminPassword };
+  }
+
+  function showTab(name, btn) {
+    document.querySelectorAll('.adm-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ---- Overview ----
+  async function loadOverview() {
+    const entries = await fetch('/api/entries').then(r => r.json());
+    const faq = await fetch('/api/admin/faq-log', { headers: authHeaders() }).then(r => r.json());
+    const now = new Date();
+    const currentMonthKey = now.toISOString().slice(0, 7);
+    const hasCurrent = entries.some(e => e.month === currentMonthKey);
+    document.getElementById('overviewStats').innerHTML = `
+      <div class="adm-stat"><div class="n">${entries.length}</div><div class="l">Months entered</div></div>
+      <div class="adm-stat"><div class="n">${faq.length}</div><div class="l">Questions asked</div></div>
+    `;
+    document.getElementById('overviewWarning').innerHTML = hasCurrent
+      ? '<div class="adm-msg ok">This month\'s data is entered.</div>'
+      : `<div class="adm-msg err">This month (${currentMonthKey}) is missing — add it in the Monthly Entry tab.</div>`;
+  }
+
+  // ---- Monthly entry ----
   async function saveEntry() {
     const body = {
       month: document.getElementById('fMonth').value,
@@ -69,19 +263,204 @@
       nonFood: document.getElementById('fNonFood').value ? parseFloat(document.getElementById('fNonFood').value) : null,
       source: document.getElementById('fSource').value
     };
-
-    const res = await fetch('/api/admin/entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
-      body: JSON.stringify(body)
-    });
+    const res = await fetch('/api/admin/entries', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     const data = await res.json();
-    const msg = document.getElementById('entryMsg');
-    if (data.ok) {
-      msg.innerHTML = '<div class="admin-msg ok">Saved. The public dashboard now shows this month\'s data.</div>';
-    } else {
-      msg.innerHTML = `<div class="admin-msg err">${data.error || 'Something went wrong.'}</div>`;
-    }
+    document.getElementById('entryMsg').innerHTML = data.ok
+      ? '<div class="adm-msg ok">Saved. The public dashboard now shows this month.</div>'
+      : `<div class="adm-msg err">${data.error}</div>`;
+    if (data.ok) { loadHistory(); loadOverview(); }
+  }
+
+  function editEntry(e) {
+    document.getElementById('fMonth').value = e.month;
+    document.getElementById('fLabel').value = e.label;
+    document.getElementById('fHeadline').value = e.headline;
+    document.getElementById('fFood').value = e.food ?? '';
+    document.getElementById('fNonFood').value = e.nonFood ?? '';
+    document.getElementById('fSource').value = e.source || '';
+    document.querySelector('.adm-tab').click(); // fallback
+    showTab('monthly', document.querySelectorAll('.adm-tab')[1]);
+  }
+
+  async function deleteEntry(month) {
+    if (!confirm('Delete ' + month + '?')) return;
+    await fetch('/api/admin/entries/' + encodeURIComponent(month), { method: 'DELETE', headers: authHeaders() });
+    loadHistory(); loadOverview();
+  }
+
+  // ---- History ----
+  async function loadHistory() {
+    const entries = await fetch('/api/entries').then(r => r.json());
+    const body = document.getElementById('historyBody');
+    body.innerHTML = '';
+    entries.slice().reverse().forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${e.label}</td><td>${e.headline}%</td><td>${e.food ?? '—'}%</td><td>${e.nonFood ?? '—'}%</td>
+        <td><button class="adm-btn" style="padding:4px 10px;font-size:11px;" onclick='editEntry(${JSON.stringify(e)})'>Edit</button>
+        <button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteEntry('${e.month}')">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  // ---- Other indicators ----
+  async function loadOther() {
+    const s = await fetch('/api/summary').then(r => r.json());
+    document.getElementById('pRate').value = s.policyRates.policyRate ?? '';
+    document.getElementById('pLombard').value = s.policyRates.lombardRate ?? '';
+    document.getElementById('pLocal').value = s.policyRates.liquidityReserveLocal ?? '';
+    document.getElementById('pForeign').value = s.policyRates.liquidityReserveForeign ?? '';
+    document.getElementById('pMoney').value = s.policyRates.moneySupplyGrowth ?? '';
+
+    document.getElementById('uMonthly').value = s.urbanRural.urban?.monthly ?? '';
+    document.getElementById('uFood').value = s.urbanRural.urban?.food ?? '';
+    document.getElementById('uNonFood').value = s.urbanRural.urban?.nonFood ?? '';
+    document.getElementById('rMonthly').value = s.urbanRural.rural?.monthly ?? '';
+    document.getElementById('rFood').value = s.urbanRural.rural?.food ?? '';
+    document.getElementById('rNonFood').value = s.urbanRural.rural?.nonFood ?? '';
+
+    document.getElementById('gProjection').value = s.growthOutlook.projection2026 ?? '';
+    document.getElementById('gPrevious').value = s.growthOutlook.previousProjection ?? '';
+  }
+
+  async function savePolicyRates() {
+    const body = {
+      policyRate: parseFloat(document.getElementById('pRate').value),
+      lombardRate: parseFloat(document.getElementById('pLombard').value),
+      liquidityReserveLocal: parseFloat(document.getElementById('pLocal').value),
+      liquidityReserveForeign: parseFloat(document.getElementById('pForeign').value),
+      moneySupplyGrowth: parseFloat(document.getElementById('pMoney').value),
+      asOf: new Date().toISOString().slice(0, 7)
+    };
+    const res = await fetch('/api/admin/policy-rates', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('policyMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+
+  async function saveUrbanRural() {
+    const body = {
+      urban: { monthly: parseFloat(document.getElementById('uMonthly').value), food: parseFloat(document.getElementById('uFood').value), nonFood: parseFloat(document.getElementById('uNonFood').value) },
+      rural: { monthly: parseFloat(document.getElementById('rMonthly').value), food: parseFloat(document.getElementById('rFood').value), nonFood: parseFloat(document.getElementById('rNonFood').value) },
+      asOf: new Date().toISOString().slice(0, 7)
+    };
+    const res = await fetch('/api/admin/urban-rural', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('urMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+
+  async function saveGrowth() {
+    const body = {
+      projection2026: parseFloat(document.getElementById('gProjection').value),
+      previousProjection: parseFloat(document.getElementById('gPrevious').value),
+      asOf: new Date().toISOString().slice(0, 7)
+    };
+    const res = await fetch('/api/admin/growth-outlook', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('growthMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+
+  // ---- Yearly averages ----
+  let yearlyRows = [];
+  async function loadYearly() {
+    yearlyRows = await fetch('/api/yearly').then(r => r.json());
+    renderYearly();
+  }
+  function renderYearly() {
+    const body = document.getElementById('yearlyBody');
+    body.innerHTML = '';
+    yearlyRows.forEach((y, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${y.year}</td><td>${y.avg}%</td><td>${y.source || ''}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="removeYearlyRow(${i})">Remove</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  function addYearlyRow() {
+    const year = document.getElementById('yYear').value;
+    const avg = parseFloat(document.getElementById('yAvg').value);
+    const source = document.getElementById('ySource').value;
+    if (!year || isNaN(avg)) return;
+    yearlyRows.push({ year, avg, source });
+    renderYearly();
+    document.getElementById('yYear').value = '';
+    document.getElementById('yAvg').value = '';
+    document.getElementById('ySource').value = '';
+  }
+  function removeYearlyRow(i) { yearlyRows.splice(i, 1); renderYearly(); }
+  async function saveYearly() {
+    const res = await fetch('/api/admin/yearly', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ yearlyAverages: yearlyRows }) });
+    document.getElementById('yearlyMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+
+  // ---- Explainer ----
+  async function loadExplainer() {
+    const d = await fetch('/api/explainer').then(r => r.json());
+    document.getElementById('explainerBox').value = d.text || '';
+  }
+  async function saveExplainer() {
+    const text = document.getElementById('explainerBox').value;
+    const res = await fetch('/api/admin/explainer', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ text }) });
+    document.getElementById('explainerMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+
+  // ---- FAQ inbox ----
+  async function loadFaq() {
+    const log = await fetch('/api/admin/faq-log', { headers: authHeaders() }).then(r => r.json());
+    const body = document.getElementById('faqBody');
+    body.innerHTML = '';
+    log.slice().reverse().forEach((item, i) => {
+      const realIndex = log.length - 1 - i;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="font-size:11px;color:#9a8f74;">${new Date(item.timestamp).toLocaleString()}</td><td>${item.question}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteFaq(${realIndex})">Clear</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function deleteFaq(index) {
+    await fetch('/api/admin/faq-log/' + index, { method: 'DELETE', headers: authHeaders() });
+    loadFaq();
+  }
+
+  // ---- Contact ----
+  async function loadContact() {
+    const c = await fetch('/api/contact').then(r => r.json());
+    document.getElementById('cEmail').value = c.email || '';
+    document.getElementById('cPhone').value = c.phone || '';
+    document.getElementById('cWebsite').value = c.website || '';
+  }
+  async function saveContact() {
+    const body = {
+      email: document.getElementById('cEmail').value,
+      phone: document.getElementById('cPhone').value,
+      website: document.getElementById('cWebsite').value
+    };
+    const res = await fetch('/api/admin/contact', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('contactMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+
+  // ---- Bulk import/export ----
+  async function bulkImport() {
+    const text = document.getElementById('bulkBox').value.trim();
+    if (!text) return;
+    const rows = text.split('\n').map(line => {
+      const [month, label, headline, food, nonFood, source] = line.split(',');
+      return {
+        month: month?.trim(), label: label?.trim(),
+        headline: parseFloat(headline), food: food ? parseFloat(food) : null, nonFood: nonFood ? parseFloat(nonFood) : null,
+        source: source?.trim() || ''
+      };
+    }).filter(r => r.month && r.label && !isNaN(r.headline));
+    const res = await fetch('/api/admin/entries/bulk', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ rows }) });
+    const data = await res.json();
+    document.getElementById('bulkMsg').innerHTML = data.ok ? `<div class="adm-msg ok">Imported ${data.count} row(s).</div>` : '<div class="adm-msg err">Error.</div>';
+    loadHistory(); loadOverview();
+  }
+
+  function exportCsv() {
+    fetch('/api/admin/export', { headers: authHeaders() })
+      .then(r => r.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'inflation-data.csv';
+        a.click();
+      });
   }
 </script>
 </body>
