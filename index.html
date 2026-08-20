@@ -22,122 +22,142 @@
       <div class="hero-brand">
         <div class="hero-logo">RBM</div>
         <div>
-          <div class="hero-title">Malawi Economic<br>Indicators</div>
-          <div class="hero-sub">The Reserve Bank's published data, made explorable — updated every month.</div>
+          <div class="hero-title" data-en="Malawi Economic Indicators" data-ny="Ziwerengero za Chuma cha Malawi">Malawi Economic<br>Indicators</div>
+          <div class="hero-sub" data-en="The Reserve Bank's published data, made explorable — updated every month." data-ny="Ziwerengero za Reserve Bank, zosavuta kuzimvetsa — zimasinthidwa mwezi uliwonse.">The Reserve Bank's published data, made explorable — updated every month.</div>
         </div>
       </div>
       <div class="hero-nav">
-        <a class="navbtn active" href="index.html">Dashboard</a>
-        <a class="navbtn" href="learn.html">Learn</a>
-        <a class="navbtn" href="about.html">About</a>
-        <a class="navbtn" href="sources.html">Sources</a>
+        <a class="navbtn active" href="index.html" data-en="Dashboard" data-ny="Dashboard">Dashboard</a>
+        <a class="navbtn" href="learn.html" data-en="Learn" data-ny="Phunzirani">Learn</a>
+        <a class="navbtn" href="about.html" data-en="About" data-ny="Za ife">About</a>
+        <a class="navbtn" href="sources.html" data-en="Sources" data-ny="Magwero">Sources</a>
       </div>
     </div>
+    <div class="lang-toggle" style="margin-top:16px;">
+      <button class="active" onclick="setLang('en', this)">English</button>
+      <button onclick="setLang('ny', this)">Chichewa</button>
+    </div>
     <div class="ticker">
-      <div class="pill">Headline Inflation <b id="tickerHeadline">—</b></div>
-      <div class="pill">Policy Rate <b id="tickerPolicy">—</b></div>
-      <div class="pill">2026 Growth Projection <b id="tickerGrowth">—</b></div>
-      <div class="pill">Next MPC Meeting <b>28–29 Oct 2026</b></div>
+      <div class="pill"><span data-en="Headline Inflation" data-ny="Inflation Yayikulu">Headline Inflation</span> <b id="tickerHeadline">—</b></div>
+      <div class="pill"><span data-en="Policy Rate" data-ny="Policy Rate">Policy Rate</span> <b id="tickerPolicy">—</b></div>
+      <div class="pill"><span data-en="2026 Growth Projection" data-ny="Kukula kwa Chuma 2026">2026 Growth Projection</span> <b id="tickerGrowth">—</b></div>
+      <div class="pill"><span data-en="Next MPC Meeting" data-ny="Msonkhano Wotsatira wa MPC">Next MPC Meeting</span> <b>28–29 Oct 2026</b></div>
     </div>
   </div>
 
-  <button onclick="downloadReport()" style="margin:20px 0 0; padding:12px 22px; border-radius:10px; border:none; background:#8F6620; color:#fff; font-weight:700; font-size:13px; cursor:pointer;">📄 Download This Month's Report (PDF)</button>
+  <button onclick="downloadReport()" style="margin:20px 0 0; padding:12px 22px; border-radius:10px; border:none; background:#8F6620; color:#fff; font-weight:700; font-size:13px; cursor:pointer;" data-en="📄 Download This Month's Report (PDF)" data-ny="📄 Tsitsani Lipoti la Mwezi Uno (PDF)">📄 Download This Month's Report (PDF)</button>
 
-  <div class="section-title">Key Indicators <span class="tag">Latest release</span></div>
+  <div class="section-title"><span data-en="Key Indicators" data-ny="Ziwerengero Zazikulu">Key Indicators</span> <span class="tag" data-en="Latest release" data-ny="Zaposachedwa">Latest release</span></div>
   <div class="kpi-grid">
     <div class="kpi">
-      <button class="explain-btn" onclick="toggleExplain('exp-headline')">What's this?</button>
-      <div class="label">Headline Inflation</div>
+      <button class="explain-btn" onclick="toggleExplain('exp-headline')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Headline Inflation" data-ny="Inflation Yayikulu">Headline Inflation</div>
       <div class="value" id="kpiHeadline">—</div>
       <div class="delta" id="kpiHeadlineDelta"></div>
-      <div class="explain-text" id="exp-headline">This shows how much more expensive things are now compared to a year ago.</div>
+      <div class="explain-text" id="exp-headline" data-en="This shows how much more expensive things are now compared to a year ago." data-ny="Ikusonyeza kuti zinthu zawonjezeka mtengo bwanji poyerekeza ndi chaka chatha.">This shows how much more expensive things are now compared to a year ago.</div>
     </div>
     <div class="kpi">
-      <button class="explain-btn" onclick="toggleExplain('exp-food')">What's this?</button>
-      <div class="label">Food Inflation</div>
+      <button class="explain-btn" onclick="toggleExplain('exp-food')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Food Inflation" data-ny="Mtengo wa Zakudya">Food Inflation</div>
       <div class="value" id="kpiFood">—</div>
       <div class="delta" id="kpiFoodDelta"></div>
-      <div class="explain-text" id="exp-food">The price of things like maize, rice, and vegetables, compared to a year ago.</div>
+      <div class="explain-text" id="exp-food" data-en="The price of things like maize, rice, and vegetables, compared to a year ago." data-ny="Mtengo wa zinthu monga chimanga, mpunga, ndi masamba, poyerekeza ndi chaka chatha.">The price of things like maize, rice, and vegetables, compared to a year ago.</div>
     </div>
     <div class="kpi">
-      <button class="explain-btn" onclick="toggleExplain('exp-nonfood')">What's this?</button>
-      <div class="label">Non-Food Inflation</div>
+      <button class="explain-btn" onclick="toggleExplain('exp-nonfood')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Non-Food Inflation" data-ny="Zosati Zakudya">Non-Food Inflation</div>
       <div class="value" id="kpiNonFood">—</div>
       <div class="delta" id="kpiNonFoodDelta"></div>
-      <div class="explain-text" id="exp-nonfood">The price of fuel, rent, transport, and other non-food items, compared to a year ago.</div>
+      <div class="explain-text" id="exp-nonfood" data-en="The price of fuel, rent, transport, and other non-food items, compared to a year ago." data-ny="Mtengo wa mafuta, nyumba, pa transport, ndi zina zosati zakudya, poyerekeza ndi chaka chatha.">The price of fuel, rent, transport, and other non-food items, compared to a year ago.</div>
     </div>
     <div class="kpi">
-      <button class="explain-btn" onclick="toggleExplain('exp-policy')">What's this?</button>
-      <div class="label">Policy Rate</div>
+      <button class="explain-btn" onclick="toggleExplain('exp-policy')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Policy Rate" data-ny="Policy Rate">Policy Rate</div>
       <div class="value" id="kpiPolicyRate">—</div>
-      <div class="delta">maintained</div>
-      <div class="explain-text" id="exp-policy">The interest rate the Reserve Bank sets. When it rises, loans usually get more expensive.</div>
+      <div class="delta" data-en="maintained" data-ny="sinasinthe">maintained</div>
+      <div class="explain-text" id="exp-policy" data-en="The interest rate the Reserve Bank sets. When it rises, loans usually get more expensive." data-ny="Interest rate yomwe Reserve Bank imayika. Ikakwera, ngongole zimadula.">The interest rate the Reserve Bank sets. When it rises, loans usually get more expensive.</div>
     </div>
     <div class="kpi">
-      <button class="explain-btn" onclick="toggleExplain('exp-growth')">What's this?</button>
-      <div class="label">2026 Growth Outlook</div>
+      <button class="explain-btn" onclick="toggleExplain('exp-growth')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="2026 Growth Outlook" data-ny="Kukula kwa Chuma 2026">2026 Growth Outlook</div>
       <div class="value" id="kpiGrowth">—</div>
       <div class="delta down" id="kpiGrowthDelta"></div>
-      <div class="explain-text" id="exp-growth">How much bigger the economy is expected to get this year.</div>
+      <div class="explain-text" id="exp-growth" data-en="How much bigger the economy is expected to get this year." data-ny="Momwe chuma cha dziko chikuyembekezeka kukulira chaka chino.">How much bigger the economy is expected to get this year.</div>
     </div>
   </div>
 
-  <div class="section-title">Inflation Trend <span class="tag">Real, sourced monthly data</span></div>
+  <div class="section-title"><span data-en="Inflation Trend" data-ny="Mmene Mitengo Yakhala Ikuyendera">Inflation Trend</span> <span class="tag" data-en="Real, sourced monthly data" data-ny="Ziwerengero zenizeni">Real, sourced monthly data</span></div>
   <div class="panel-grid">
     <div class="panel">
-      <h3>Headline, Food & Non-Food Inflation</h3>
-      <div class="desc">Every point below comes from an RBM/NSO release — see Sources for citations.</div>
+      <h3 data-en="Headline, Food & Non-Food Inflation" data-ny="Inflation Yayikulu, Zakudya ndi Zosati Zakudya">Headline, Food & Non-Food Inflation</h3>
+      <div class="desc" data-en="Every point below comes from an RBM/NSO release — see Sources for citations." data-ny="Ziwerengero zonse pansipa zimachokera ku RBM/NSO — onani Sources.">Every point below comes from an RBM/NSO release — see Sources for citations.</div>
       <div class="chart-box"><canvas id="mainTrend"></canvas></div>
     </div>
     <div class="panel">
-      <h3>Monetary Policy Rates</h3>
+      <h3 data-en="Monetary Policy Rates" data-ny="Ziwerengero za Policy">Monetary Policy Rates</h3>
       <div class="rate-table">
-        <div class="rate-row"><span class="rname">Policy Rate</span><span class="rval" id="rtPolicy">—</span></div>
-        <div class="rate-row"><span class="rname">Lombard Rate</span><span class="rval" id="rtLombard">—</span></div>
-        <div class="rate-row"><span class="rname">Liquidity Reserve — Local</span><span class="rval" id="rtLocal">—</span></div>
-        <div class="rate-row"><span class="rname">Liquidity Reserve — Foreign</span><span class="rval" id="rtForeign">—</span></div>
-        <div class="rate-row"><span class="rname">Money Supply Growth</span><span class="rval" id="rtMoney">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Policy Rate" data-ny="Policy Rate">Policy Rate</span><span class="rval" id="rtPolicy">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Lombard Rate" data-ny="Lombard Rate">Lombard Rate</span><span class="rval" id="rtLombard">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Liquidity Reserve — Local" data-ny="Liquidity Reserve — Local">Liquidity Reserve — Local</span><span class="rval" id="rtLocal">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Liquidity Reserve — Foreign" data-ny="Liquidity Reserve — Foreign">Liquidity Reserve — Foreign</span><span class="rval" id="rtForeign">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Money Supply Growth" data-ny="Kukula kwa Ndalama">Money Supply Growth</span><span class="rval" id="rtMoney">—</span></div>
       </div>
     </div>
   </div>
 
   <div class="two-col">
     <div class="panel">
-      <h3>Urban vs Rural — Monthly Inflation</h3>
+      <h3 data-en="Urban vs Rural — Monthly Inflation" data-ny="Mumzinda ndi Kumudzi — Inflation ya Mwezi">Urban vs Rural — Monthly Inflation</h3>
       <div class="chart-box small"><canvas id="urbanRural"></canvas></div>
     </div>
     <div class="panel">
-      <h3>What this means</h3>
+      <h3 data-en="What this means" data-ny="Zikutanthauza chiyani">What this means</h3>
       <div class="explainer" id="explainerText" style="margin-top:0;">Loading…</div>
     </div>
   </div>
 
-  <div class="section-title">What This Means For You <span class="tag">Tool</span></div>
+  <div class="section-title"><span data-en="What This Means For You" data-ny="Zikutanthauza Chiyani Kwa Inu">What This Means For You</span> <span class="tag" data-en="Tool" data-ny="Chida">Tool</span></div>
   <div class="calc">
-    <h3>Inflation Impact Calculator</h3>
-    <div class="desc">See how current inflation affects the real value of money over time.</div>
+    <h3 data-en="Inflation Impact Calculator" data-ny="Chowerengera Zotsatira za Inflation">Inflation Impact Calculator</h3>
+    <div class="desc" data-en="See how current inflation affects the real value of money over time." data-ny="Onani mmene inflation ikukhudzira ndalama zanu pakapita nthawi.">See how current inflation affects the real value of money over time.</div>
     <div class="calc-row">
-      <div class="calc-field"><label>Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
-      <div class="calc-field"><label>Over how many years</label><input type="number" id="calcYears" value="1"></div>
-      <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
+      <div class="calc-field"><label data-en="Amount (MWK)" data-ny="Ndalama (MWK)">Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
+      <div class="calc-field"><label data-en="Over how many years" data-ny="Pa zaka zingati">Over how many years</label><input type="number" id="calcYears" value="1"></div>
+      <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;" data-en="Calculate" data-ny="Werengani">Calculate</button>
     </div>
-    <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+    <div class="calc-result" id="calcResult" data-en="Enter an amount and press Calculate." data-ny="Lowetsani ndalama kenako dinani Werengani.">Enter an amount and press Calculate.</div>
   </div>
 
-  <div class="section-title">Full Data Table <span class="tag">Real, sourced values</span></div>
+  <div class="section-title"><span data-en="Full Data Table" data-ny="Ziwerengero Zonse">Full Data Table</span> <span class="tag" data-en="Real, sourced values" data-ny="Ziwerengero Zenizeni">Real, sourced values</span></div>
   <div class="panel">
     <table class="data-table">
-      <thead><tr><th>Month</th><th>Headline</th><th>Food</th><th>Non-Food</th><th>Source</th></tr></thead>
+      <thead><tr>
+        <th data-en="Month" data-ny="Mwezi">Month</th>
+        <th data-en="Headline" data-ny="Yayikulu">Headline</th>
+        <th data-en="Food" data-ny="Zakudya">Food</th>
+        <th data-en="Non-Food" data-ny="Zosati Zakudya">Non-Food</th>
+        <th data-en="Source" data-ny="Komwe Zachokera">Source</th>
+      </tr></thead>
       <tbody id="dataTableBody"></tbody>
     </table>
   </div>
 
   <div class="footer">
-    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication.</div>
+    <div class="left" data-en="Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication." data-ny="Ntchito yodziyimira payokha yopangidwa kuchokera ku ziwerengero za Reserve Bank of Malawi. Siyogwirizana ndi RBM. Ziwerengero zikhoza kusinthidwa ndi RBM.">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication.</div>
     <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
   </div>
 
 </div>
 <script src="dashboard.js"></script>
+<script>
+  function setLang(lang, btn) {
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const val = el.getAttribute('data-' + lang);
+      if (val !== null) el.textContent = val;
+    });
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+</script>
 </body>
 </html>
