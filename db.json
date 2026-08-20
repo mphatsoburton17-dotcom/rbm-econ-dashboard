@@ -37,5 +37,12 @@
     {"year": "2024", "avg": 32.18, "source": "World Bank / IMF"},
     {"year": "2025", "avg": 27.6, "source": "Estimated from monthly RBM/NSO releases (partial year)"},
     {"year": "2026 (YTD)", "avg": 23.6, "source": "Average of Jan-Jul 2026 RBM/NSO releases"}
-  ]
+  ],
+  "explainerText": "Prices are still rising overall, but more slowly than late 2025 — driven mainly by easing food costs. Non-food items (fuel, transport, imported goods) remain the bigger pressure on households.",
+  "contactSettings": {
+    "email": "reserve-bank@rbm.mw",
+    "phone": "Toll-free 459",
+    "website": "www.rbm.mw"
+  },
+  "faqLog": []
 }
