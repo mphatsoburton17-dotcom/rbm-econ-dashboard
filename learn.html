@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learn — Malawi Economic Indicators</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title">Learn</div>
+          <div class="hero-sub">Simple explanations of the words used on this site — in plain English or Chichewa.</div>
+        </div>
+      </div>
+      <div class="hero-nav">
+        <a class="navbtn" href="/index.html">Dashboard</a>
+        <a class="navbtn active" href="/learn.html">Learn</a>
+        <a class="navbtn" href="/about.html">About</a>
+        <a class="navbtn" href="/sources.html">Sources</a>
+      </div>
+    </div>
+    <div class="lang-toggle" style="margin-top:18px;">
+      <button class="active" onclick="setLang('en', this)">English</button>
+      <button onclick="setLang('ny', this)">Chichewa</button>
+    </div>
+  </div>
+
+  <div class="learn-card">
+    <h4 data-en="What is inflation?" data-ny="Kodi inflation ndi chiyani?"></h4>
+    <p data-en="Inflation shows how much more expensive things are now compared to a year ago. If inflation is 20%, something that cost MK1,000 last year now costs about MK1,200."
+       data-ny="Inflation ikusonyeza kuti zinthu zawonjezeka mtengo bwanji poyerekeza ndi chaka chatha. Ngati inflation ili pa 20%, chinthu chomwe chinali MK1,000 chaka chatha, tsopano chikhoza kukhala pafupifupi MK1,200."></p>
+  </div>
+
+  <div class="learn-card">
+    <h4 data-en="Food vs Non-Food inflation" data-ny="Food ndi Non-Food inflation"></h4>
+    <p data-en="Food inflation is about the price of things like maize, rice, and vegetables. Non-food inflation is about things that aren't food — fuel, rent, transport, clothing — but still affect your pocket every day."
+       data-ny="Food inflation ndi za mtengo wa zakudya monga chimanga, mpunga, ndi masamba. Non-food inflation ndi za zinthu zomwe si zakudya — mafuta, nyumba, pa transport, zovala — koma zimakhudzabe ndalama zanu tsiku ndi tsiku."></p>
+  </div>
+
+  <div class="learn-card">
+    <h4 data-en="What is the Policy Rate?" data-ny="Kodi Policy Rate ndi chiyani?"></h4>
+    <p data-en="This is the interest rate the Reserve Bank sets for banks. When it goes up, loans and borrowing usually get more expensive. When it goes down, borrowing usually gets cheaper."
+       data-ny="Ili ndi interest rate yomwe Reserve Bank imayika kwa mabanki. Ikakwera, katangale ndi ngongole zimadula kwambiri. Ikatsika, ngongole zimakhala zotsika mtengo."></p>
+  </div>
+
+  <div class="learn-card">
+    <h4 data-en="Why urban and rural numbers differ" data-ny="Chifukwa chake ziwerengero za mumzinda ndi kumudzi zimasiyana"></h4>
+    <p data-en="Prices don't rise the same way everywhere. Transport costs, food availability, and local markets differ between cities and villages — so inflation is often shown separately for urban and rural areas."
+       data-ny="Mitengo siikwera mofanana kulikonse. Ndalama za transport, kupezeka kwa chakudya, ndi masitolo a m'deralo zimasiyana pakati pa mizinda ndi midzi — chomwecho inflation nthawi zambiri imawonetsedwa mosiyana pakati pa mumzinda ndi kumudzi."></p>
+  </div>
+
+  <div class="learn-card">
+    <h4 data-en="Why this changes month to month" data-ny="Chifukwa chake izi zimasintha mwezi ndi mwezi"></h4>
+    <p data-en="The Reserve Bank publishes new figures every month, based on real prices collected across the country. This site updates as soon as new numbers are released — so you're always seeing the latest picture."
+       data-ny="Reserve Bank imatulutsa ziwerengero zatsopano mwezi uliwonse, kutengera mitengo yeniyeni yosonkhanitsidwa mdziko lonse. Tsamba ili limasintha nthawi yomweyo ziwerengero zatsopano zikatulutsidwa — kotero mumaonabe chithunzi chaposachedwa."></p>
+  </div>
+
+  <div class="footer">
+    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
+
+</div>
+<script>
+  function setLang(lang, btn) {
+    document.querySelectorAll('[data-en]').forEach(el => {
+      el.textContent = el.getAttribute('data-' + lang);
+    });
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  setLang('en', document.querySelector('.lang-toggle button'));
+</script>
+</body>
+</html>

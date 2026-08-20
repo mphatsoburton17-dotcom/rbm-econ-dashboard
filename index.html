@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malawi Economic Indicators — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="banner">
+    <b>Independent prototype</b> — built from the Reserve Bank of Malawi's own published releases. Not affiliated with or endorsed by RBM. Every figure below is a real, sourced value — see the <a href="/sources.html">Sources page</a>.
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title">Malawi Economic<br>Indicators</div>
+          <div class="hero-sub">The Reserve Bank's published data, made explorable — updated every month.</div>
+        </div>
+      </div>
+      <div class="hero-nav">
+        <a class="navbtn active" href="/index.html">Dashboard</a>
+        <a class="navbtn" href="/learn.html">Learn</a>
+        <a class="navbtn" href="/about.html">About</a>
+        <a class="navbtn" href="/sources.html">Sources</a>
+      </div>
+    </div>
+    <div class="ticker">
+      <div class="pill">Headline Inflation <b id="tickerHeadline">—</b></div>
+      <div class="pill">Policy Rate <b id="tickerPolicy">—</b></div>
+      <div class="pill">2026 Growth Projection <b id="tickerGrowth">—</b></div>
+      <div class="pill">Next MPC Meeting <b>28–29 Oct 2026</b></div>
+    </div>
+  </div>
+
+  <div class="section-title">Key Indicators <span class="tag">Latest release</span></div>
+  <div class="kpi-grid">
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-headline')">What's this?</button>
+      <div class="label">Headline Inflation</div>
+      <div class="value" id="kpiHeadline">—</div>
+      <div class="delta" id="kpiHeadlineDelta"></div>
+      <div class="explain-text" id="exp-headline">This shows how much more expensive things are now compared to a year ago.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-food')">What's this?</button>
+      <div class="label">Food Inflation</div>
+      <div class="value" id="kpiFood">—</div>
+      <div class="delta" id="kpiFoodDelta"></div>
+      <div class="explain-text" id="exp-food">The price of things like maize, rice, and vegetables, compared to a year ago.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-nonfood')">What's this?</button>
+      <div class="label">Non-Food Inflation</div>
+      <div class="value" id="kpiNonFood">—</div>
+      <div class="delta" id="kpiNonFoodDelta"></div>
+      <div class="explain-text" id="exp-nonfood">The price of fuel, rent, transport, and other non-food items, compared to a year ago.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-policy')">What's this?</button>
+      <div class="label">Policy Rate</div>
+      <div class="value" id="kpiPolicyRate">—</div>
+      <div class="delta">maintained</div>
+      <div class="explain-text" id="exp-policy">The interest rate the Reserve Bank sets. When it rises, loans usually get more expensive.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-growth')">What's this?</button>
+      <div class="label">2026 Growth Outlook</div>
+      <div class="value" id="kpiGrowth">—</div>
+      <div class="delta down" id="kpiGrowthDelta"></div>
+      <div class="explain-text" id="exp-growth">How much bigger the economy is expected to get this year.</div>
+    </div>
+  </div>
+
+  <div class="section-title">Inflation Trend <span class="tag">Real, sourced monthly data</span></div>
+  <div class="panel-grid">
+    <div class="panel">
+      <h3>Headline, Food & Non-Food Inflation</h3>
+      <div class="desc">Every point below comes from an RBM/NSO release — see Sources for citations.</div>
+      <div class="chart-box"><canvas id="mainTrend"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Monetary Policy Rates</h3>
+      <div class="rate-table">
+        <div class="rate-row"><span class="rname">Policy Rate</span><span class="rval" id="rtPolicy">—</span></div>
+        <div class="rate-row"><span class="rname">Lombard Rate</span><span class="rval" id="rtLombard">—</span></div>
+        <div class="rate-row"><span class="rname">Liquidity Reserve — Local</span><span class="rval" id="rtLocal">—</span></div>
+        <div class="rate-row"><span class="rname">Liquidity Reserve — Foreign</span><span class="rval" id="rtForeign">—</span></div>
+        <div class="rate-row"><span class="rname">Money Supply Growth</span><span class="rval" id="rtMoney">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>Urban vs Rural — Monthly Inflation</h3>
+      <div class="chart-box small"><canvas id="urbanRural"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>What this means</h3>
+      <div class="explainer" id="explainerText" style="margin-top:0;">Loading…</div>
+    </div>
+  </div>
+
+  <div class="section-title">What This Means For You <span class="tag">Tool</span></div>
+  <div class="calc">
+    <h3>Inflation Impact Calculator</h3>
+    <div class="desc">See how current inflation affects the real value of money over time.</div>
+    <div class="calc-row">
+      <div class="calc-field"><label>Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
+      <div class="calc-field"><label>Over how many years</label><input type="number" id="calcYears" value="1"></div>
+      <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
+    </div>
+    <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+  </div>
+
+  <div class="section-title">Full Data Table <span class="tag">Real, sourced values</span></div>
+  <div class="panel">
+    <table class="data-table">
+      <thead><tr><th>Month</th><th>Headline</th><th>Food</th><th>Non-Food</th><th>Source</th></tr></thead>
+      <tbody id="dataTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
+
+</div>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
