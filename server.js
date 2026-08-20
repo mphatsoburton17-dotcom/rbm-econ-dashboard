@@ -32,7 +32,11 @@ app.get('/api/entries', (req, res) => {
   res.json(entries);
 });
 
-// Latest month's snapshot + policy rates + urban/rural + growth outlook, in one call
+// Yearly averages — multi-year view
+app.get('/api/yearly', (req, res) => {
+  res.json(db.get('yearlyAverages').value());
+});
+
 app.get('/api/summary', (req, res) => {
   const entries = db.get('entries').sortBy('month').value();
   const latest = entries[entries.length - 1] || null;
