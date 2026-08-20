@@ -128,6 +128,23 @@
     <div class="calc-result" id="calcResult" data-en="Enter an amount and press Calculate." data-ny="Lowetsani ndalama kenako dinani Werengani.">Enter an amount and press Calculate.</div>
   </div>
 
+  <div class="section-title">Multi-Year View <span class="tag">Annual averages, World Bank/IMF</span></div>
+  <div class="panel">
+    <h3>Inflation by Year</h3>
+    <div class="desc">2020–2026, showing the longer trend beyond any single month.</div>
+    <div class="chart-box"><canvas id="yearlyChart"></canvas></div>
+  </div>
+
+  <button id="faqToggle">💬</button>
+  <div id="faqPanel">
+    <div class="faq-header">Ask about this data</div>
+    <div id="faqMessages"></div>
+    <div id="faqInputRow">
+      <input id="faqInput" type="text" placeholder="Ask a question...">
+      <button id="faqSend">Send</button>
+    </div>
+  </div>
+
   <div class="section-title"><span data-en="Full Data Table" data-ny="Ziwerengero Zonse">Full Data Table</span> <span class="tag" data-en="Real, sourced values" data-ny="Ziwerengero Zenizeni">Real, sourced values</span></div>
   <div class="panel">
     <table class="data-table">
@@ -149,6 +166,23 @@
 
 </div>
 <script src="dashboard.js"></script>
+<script src="faq-bot.js"></script>
+<script>
+fetch('/api/yearly').then(r => r.json()).then(yearly => {
+  new Chart(document.getElementById('yearlyChart'), {
+    type: 'bar',
+    data: {
+      labels: yearly.map(y => y.year),
+      datasets: [{ label: 'Average Inflation', data: yearly.map(y => y.avg), backgroundColor: '#B8862B' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } }
+    }
+  });
+});
+</script>
 <script>
   function setLang(lang, btn) {
     document.querySelectorAll('[data-en]').forEach(el => {
