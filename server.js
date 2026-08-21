@@ -1,39 +1,22 @@
 // Malawi Economic Indicators Dashboard — backend
-// Now stores data in Postgres (via DATABASE_URL) instead of a local file,
-// so saved data survives redeploys.
+// Serves real inflation/policy-rate data to the public dashboard,
+// and lets an admin manage everything through a protected admin panel.
 
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { Pool } = require('pg');
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const adapter = new FileSync(path.join(__dirname, 'db.json'));
+const db = low(adapter);
 
-const DEFAULT_STATE = {
+db.defaults({
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
   yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
-  exchangeRates: [], tbills: [], omo: [], foreignReserves: []
-};
-
-let state = DEFAULT_STATE;
-
-async function initDb() {
-  await pool.query(`CREATE TABLE IF NOT EXISTS rbm_store (key TEXT PRIMARY KEY, data JSONB)`);
-  const res = await pool.query(`SELECT data FROM rbm_store WHERE key = 'main'`);
-  if (res.rows.length) {
-    state = { ...DEFAULT_STATE, ...res.rows[0].data };
-  } else {
-    await pool.query(`INSERT INTO rbm_store (key, data) VALUES ('main', $1)`, [state]);
-  }
-}
-
-async function saveState() {
-  await pool.query(`UPDATE rbm_store SET data = $1 WHERE key = 'main'`, [state]);
-}
+  exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: []
+}).write();
 
 const app = express();
 app.use(cors());
@@ -50,52 +33,45 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function sortByMonth(arr) {
-  return [...arr].sort((a, b) => (a.month > b.month ? 1 : a.month < b.month ? -1 : 0));
-}
-function sortByDate(arr) {
-  return [...arr].sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
-}
-
 // ================= PUBLIC API =================
 
 app.get('/api/entries', (req, res) => {
-  res.json(sortByMonth(state.entries));
+  res.json(db.get('entries').sortBy('month').value());
 });
 
 app.get('/api/yearly', (req, res) => {
-  res.json(state.yearlyAverages);
+  res.json(db.get('yearlyAverages').value());
 });
 
 app.get('/api/explainer', (req, res) => {
-  res.json({ text: state.explainerText });
+  res.json({ text: db.get('explainerText').value() });
 });
 
 app.get('/api/contact', (req, res) => {
-  res.json(state.contactSettings);
+  res.json(db.get('contactSettings').value());
 });
 
 app.get('/api/summary', (req, res) => {
-  const entries = sortByMonth(state.entries);
+  const entries = db.get('entries').sortBy('month').value();
   const latest = entries[entries.length - 1] || null;
   const previous = entries[entries.length - 2] || null;
   res.json({
     latest, previous,
-    policyRates: state.policyRates,
-    urbanRural: state.urbanRural,
-    growthOutlook: state.growthOutlook,
+    policyRates: db.get('policyRates').value(),
+    urbanRural: db.get('urbanRural').value(),
+    growthOutlook: db.get('growthOutlook').value(),
   });
 });
 
-app.post('/api/faq-log', async (req, res) => {
+// Visitor submits a question from the FAQ chat widget — logged for review, no login needed
+app.post('/api/faq-log', (req, res) => {
   const { question } = req.body;
   if (!question) return res.status(400).json({ error: 'question is required' });
-  state.faqLog.push({ question, answeredByBot: true, timestamp: new Date().toISOString() });
-  await saveState();
+  db.get('faqLog').push({ question, answeredByBot: true, timestamp: new Date().toISOString() }).write();
   res.json({ ok: true });
 });
 
-// ================= ADMIN API =================
+// ================= ADMIN API (all require the password header) =================
 
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
@@ -103,38 +79,44 @@ app.post('/api/admin/login', (req, res) => {
   res.status(401).json({ ok: false, error: 'Incorrect password.' });
 });
 
-app.post('/api/admin/entries', requireAdmin, async (req, res) => {
+// -- Monthly entries: add/update, delete, bulk import, CSV export --
+
+app.post('/api/admin/entries', requireAdmin, (req, res) => {
   const { month, label, headline, food, nonFood, source } = req.body;
   if (!month || !label || headline === undefined) {
     return res.status(400).json({ error: 'month, label, and headline are required.' });
   }
-  const idx = state.entries.findIndex(e => e.month === month);
-  const entry = { month, label, headline, food, nonFood, source };
-  if (idx >= 0) state.entries[idx] = entry; else state.entries.push(entry);
-  await saveState();
+  const existing = db.get('entries').find({ month }).value();
+  if (existing) {
+    db.get('entries').find({ month }).assign({ label, headline, food, nonFood, source }).write();
+  } else {
+    db.get('entries').push({ month, label, headline, food, nonFood, source }).write();
+  }
   res.json({ ok: true });
 });
 
-app.delete('/api/admin/entries/:month', requireAdmin, async (req, res) => {
-  state.entries = state.entries.filter(e => e.month !== req.params.month);
-  await saveState();
+app.delete('/api/admin/entries/:month', requireAdmin, (req, res) => {
+  db.get('entries').remove({ month: req.params.month }).write();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/entries/bulk', requireAdmin, async (req, res) => {
-  const { rows } = req.body;
+app.post('/api/admin/entries/bulk', requireAdmin, (req, res) => {
+  const { rows } = req.body; // array of {month,label,headline,food,nonFood,source}
   if (!Array.isArray(rows)) return res.status(400).json({ error: 'rows must be an array' });
   rows.forEach(r => {
     if (!r.month || !r.label || r.headline === undefined) return;
-    const idx = state.entries.findIndex(e => e.month === r.month);
-    if (idx >= 0) state.entries[idx] = r; else state.entries.push(r);
+    const existing = db.get('entries').find({ month: r.month }).value();
+    if (existing) {
+      db.get('entries').find({ month: r.month }).assign(r).write();
+    } else {
+      db.get('entries').push(r).write();
+    }
   });
-  await saveState();
   res.json({ ok: true, count: rows.length });
 });
 
 app.get('/api/admin/export', requireAdmin, (req, res) => {
-  const entries = sortByMonth(state.entries);
+  const entries = db.get('entries').sortBy('month').value();
   const header = 'month,label,headline,food,nonFood,source';
   const rows = entries.map(r => [r.month, r.label, r.headline, r.food ?? '', r.nonFood ?? '', (r.source || '').replace(/,/g, ';')].join(','));
   const csv = [header, ...rows].join('\n');
@@ -143,78 +125,88 @@ app.get('/api/admin/export', requireAdmin, (req, res) => {
   res.send(csv);
 });
 
-app.post('/api/admin/policy-rates', requireAdmin, async (req, res) => {
-  state.policyRates = req.body;
-  await saveState();
+// -- Other indicators (policy rates, urban/rural, growth outlook) --
+
+app.post('/api/admin/policy-rates', requireAdmin, (req, res) => {
+  db.set('policyRates', req.body).write();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/urban-rural', requireAdmin, async (req, res) => {
-  state.urbanRural = req.body;
-  await saveState();
+app.post('/api/admin/urban-rural', requireAdmin, (req, res) => {
+  db.set('urbanRural', req.body).write();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/growth-outlook', requireAdmin, async (req, res) => {
-  state.growthOutlook = req.body;
-  await saveState();
+app.post('/api/admin/growth-outlook', requireAdmin, (req, res) => {
+  db.set('growthOutlook', req.body).write();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/yearly', requireAdmin, async (req, res) => {
+// -- Yearly averages --
+
+app.post('/api/admin/yearly', requireAdmin, (req, res) => {
   const { yearlyAverages } = req.body;
   if (!Array.isArray(yearlyAverages)) return res.status(400).json({ error: 'yearlyAverages must be an array' });
-  state.yearlyAverages = yearlyAverages;
-  await saveState();
+  db.set('yearlyAverages', yearlyAverages).write();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/explainer', requireAdmin, async (req, res) => {
+// -- "What this means" explainer text --
+
+app.post('/api/admin/explainer', requireAdmin, (req, res) => {
   const { text } = req.body;
-  state.explainerText = text || '';
-  await saveState();
+  db.set('explainerText', text || '').write();
   res.json({ ok: true });
 });
+
+// -- FAQ inbox --
 
 app.get('/api/admin/faq-log', requireAdmin, (req, res) => {
-  res.json(state.faqLog);
+  res.json(db.get('faqLog').value());
 });
 
-app.delete('/api/admin/faq-log/:index', requireAdmin, async (req, res) => {
+app.delete('/api/admin/faq-log/:index', requireAdmin, (req, res) => {
   const idx = parseInt(req.params.index, 10);
-  state.faqLog.splice(idx, 1);
-  await saveState();
+  const log = db.get('faqLog').value();
+  log.splice(idx, 1);
+  db.set('faqLog', log).write();
   res.json({ ok: true });
 });
 
-app.post('/api/admin/contact', requireAdmin, async (req, res) => {
-  state.contactSettings = req.body;
-  await saveState();
+// -- Contact & settings --
+
+app.post('/api/admin/contact', requireAdmin, (req, res) => {
+  db.set('contactSettings', req.body).write();
   res.json({ ok: true });
 });
+
 
 // ================= FINANCIAL MARKETS PANELS =================
 
+// ---- Exchange Rates ----
 app.get('/api/exchange-rates', (req, res) => {
-  res.json(sortByDate(state.exchangeRates));
+  res.json(db.get('exchangeRates').sortBy('date').value());
 });
 
-app.post('/api/admin/exchange-rates', requireAdmin, async (req, res) => {
+app.post('/api/admin/exchange-rates', requireAdmin, (req, res) => {
   const { date, usd, gbp, zar, source } = req.body;
   if (!date || usd === undefined) return res.status(400).json({ error: 'date and usd are required' });
-  const idx = state.exchangeRates.findIndex(e => e.date === date);
-  const entry = { date, usd, gbp, zar, source };
-  if (idx >= 0) state.exchangeRates[idx] = entry; else state.exchangeRates.push(entry);
-  await saveState();
+  const existing = db.get('exchangeRates').find({ date }).value();
+  if (existing) {
+    db.get('exchangeRates').find({ date }).assign({ usd, gbp, zar, source }).write();
+  } else {
+    db.get('exchangeRates').push({ date, usd, gbp, zar, source }).write();
+  }
   res.json({ ok: true });
 });
 
-app.delete('/api/admin/exchange-rates/:date', requireAdmin, async (req, res) => {
-  state.exchangeRates = state.exchangeRates.filter(e => e.date !== req.params.date);
-  await saveState();
+app.delete('/api/admin/exchange-rates/:date', requireAdmin, (req, res) => {
+  db.get('exchangeRates').remove({ date: req.params.date }).write();
   res.json({ ok: true });
 });
 
+// Auto-fetch endpoint — call this from an external scheduler (e.g. cron-job.org) once a day.
+// Pulls live USD/GBP/ZAR -> MWK rates from the free open.er-api.com feed and saves a new entry.
 app.get('/api/fetch-exchange-rate', async (req, res) => {
   try {
     const response = await fetch('https://open.er-api.com/v6/latest/USD');
@@ -226,75 +218,99 @@ app.get('/api/fetch-exchange-rate', async (req, res) => {
     const zarToMwk = data.rates.ZAR ? usdToMwk / data.rates.ZAR : null;
     const today = new Date().toISOString().slice(0, 10);
 
+    const existing = db.get('exchangeRates').find({ date: today }).value();
     const entry = { date: today, usd: +usdToMwk.toFixed(2), gbp: gbpToMwk ? +gbpToMwk.toFixed(2) : null, zar: zarToMwk ? +zarToMwk.toFixed(2) : null, source: 'open.er-api.com (auto-fetched)' };
-    const idx = state.exchangeRates.findIndex(e => e.date === today);
-    if (idx >= 0) state.exchangeRates[idx] = entry; else state.exchangeRates.push(entry);
-    await saveState();
+    if (existing) {
+      db.get('exchangeRates').find({ date: today }).assign(entry).write();
+    } else {
+      db.get('exchangeRates').push(entry).write();
+    }
     res.json({ ok: true, entry });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
+// ---- Treasury Bill / Bond Yields ----
 app.get('/api/tbills', (req, res) => {
-  res.json(state.tbills);
+  res.json(db.get('tbills').value());
 });
 
-app.post('/api/admin/tbills', requireAdmin, async (req, res) => {
-  state.tbills.push(req.body);
-  await saveState();
+app.post('/api/admin/tbills', requireAdmin, (req, res) => {
+  db.get('tbills').push(req.body).write();
   res.json({ ok: true });
 });
 
-app.delete('/api/admin/tbills/:index', requireAdmin, async (req, res) => {
+app.delete('/api/admin/tbills/:index', requireAdmin, (req, res) => {
   const idx = parseInt(req.params.index, 10);
-  state.tbills.splice(idx, 1);
-  await saveState();
+  const rows = db.get('tbills').value();
+  rows.splice(idx, 1);
+  db.set('tbills', rows).write();
   res.json({ ok: true });
 });
 
+// ---- Open Market Operations / Liquidity ----
 app.get('/api/omo', (req, res) => {
-  res.json(sortByDate(state.omo));
+  res.json(db.get('omo').sortBy('date').value());
 });
 
-app.post('/api/admin/omo', requireAdmin, async (req, res) => {
-  state.omo.push(req.body);
-  await saveState();
+app.post('/api/admin/omo', requireAdmin, (req, res) => {
+  db.get('omo').push(req.body).write();
   res.json({ ok: true });
 });
 
-app.delete('/api/admin/omo/:index', requireAdmin, async (req, res) => {
+app.delete('/api/admin/omo/:index', requireAdmin, (req, res) => {
   const idx = parseInt(req.params.index, 10);
-  state.omo.splice(idx, 1);
-  await saveState();
+  const rows = db.get('omo').value();
+  rows.splice(idx, 1);
+  db.set('omo', rows).write();
   res.json({ ok: true });
 });
 
+// ---- Foreign Reserves ----
 app.get('/api/reserves', (req, res) => {
-  res.json(sortByMonth(state.foreignReserves));
+  res.json(db.get('foreignReserves').sortBy('month').value());
 });
 
-app.post('/api/admin/reserves', requireAdmin, async (req, res) => {
+app.post('/api/admin/reserves', requireAdmin, (req, res) => {
   const { month, amountUSD, source } = req.body;
-  const idx = state.foreignReserves.findIndex(r => r.month === month);
-  const entry = { month, amountUSD, source };
-  if (idx >= 0) state.foreignReserves[idx] = entry; else state.foreignReserves.push(entry);
-  await saveState();
+  const existing = db.get('foreignReserves').find({ month }).value();
+  if (existing) {
+    db.get('foreignReserves').find({ month }).assign({ amountUSD, source }).write();
+  } else {
+    db.get('foreignReserves').push({ month, amountUSD, source }).write();
+  }
   res.json({ ok: true });
 });
 
-app.delete('/api/admin/reserves/:month', requireAdmin, async (req, res) => {
-  state.foreignReserves = state.foreignReserves.filter(r => r.month !== req.params.month);
-  await saveState();
+app.delete('/api/admin/reserves/:month', requireAdmin, (req, res) => {
+  db.get('foreignReserves').remove({ month: req.params.month }).write();
+  res.json({ ok: true });
+});
+
+
+// ================= NEWS & ANNOUNCEMENTS =================
+
+app.get('/api/news', (req, res) => {
+  res.json(db.get('news').value() || []);
+});
+
+app.post('/api/admin/news', requireAdmin, (req, res) => {
+  const { title, summary, link, date } = req.body;
+  if (!title || !date) return res.status(400).json({ error: 'title and date are required' });
+  db.get('news').push({ title, summary, link, date }).write();
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/news/:index', requireAdmin, (req, res) => {
+  const idx = parseInt(req.params.index, 10);
+  const rows = db.get('news').value() || [];
+  rows.splice(idx, 1);
+  db.set('news', rows).write();
   res.json({ ok: true });
 });
 
 const PORT = process.env.PORT || 3000;
-initDb().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Malawi Economic Indicators server running on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error('Failed to connect to database:', err);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log(`Malawi Economic Indicators server running on port ${PORT}`);
 });
