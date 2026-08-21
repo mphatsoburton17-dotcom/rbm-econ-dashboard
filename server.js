@@ -14,7 +14,8 @@ const db = low(adapter);
 
 db.defaults({
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
-  yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: []
+  yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
+  exchangeRates: [], tbills: [], omo: [], foreignReserves: []
 }).write();
 
 const app = express();
@@ -176,6 +177,114 @@ app.delete('/api/admin/faq-log/:index', requireAdmin, (req, res) => {
 
 app.post('/api/admin/contact', requireAdmin, (req, res) => {
   db.set('contactSettings', req.body).write();
+  res.json({ ok: true });
+});
+
+
+// ================= FINANCIAL MARKETS PANELS =================
+
+// ---- Exchange Rates ----
+app.get('/api/exchange-rates', (req, res) => {
+  res.json(db.get('exchangeRates').sortBy('date').value());
+});
+
+app.post('/api/admin/exchange-rates', requireAdmin, (req, res) => {
+  const { date, usd, gbp, zar, source } = req.body;
+  if (!date || usd === undefined) return res.status(400).json({ error: 'date and usd are required' });
+  const existing = db.get('exchangeRates').find({ date }).value();
+  if (existing) {
+    db.get('exchangeRates').find({ date }).assign({ usd, gbp, zar, source }).write();
+  } else {
+    db.get('exchangeRates').push({ date, usd, gbp, zar, source }).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/exchange-rates/:date', requireAdmin, (req, res) => {
+  db.get('exchangeRates').remove({ date: req.params.date }).write();
+  res.json({ ok: true });
+});
+
+// Auto-fetch endpoint — call this from an external scheduler (e.g. cron-job.org) once a day.
+// Pulls live USD/GBP/ZAR -> MWK rates from the free open.er-api.com feed and saves a new entry.
+app.get('/api/fetch-exchange-rate', async (req, res) => {
+  try {
+    const response = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await response.json();
+    if (!data.rates || !data.rates.MWK) throw new Error('MWK rate not found in response');
+
+    const usdToMwk = data.rates.MWK;
+    const gbpToMwk = data.rates.GBP ? usdToMwk / data.rates.GBP : null;
+    const zarToMwk = data.rates.ZAR ? usdToMwk / data.rates.ZAR : null;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const existing = db.get('exchangeRates').find({ date: today }).value();
+    const entry = { date: today, usd: +usdToMwk.toFixed(2), gbp: gbpToMwk ? +gbpToMwk.toFixed(2) : null, zar: zarToMwk ? +zarToMwk.toFixed(2) : null, source: 'open.er-api.com (auto-fetched)' };
+    if (existing) {
+      db.get('exchangeRates').find({ date: today }).assign(entry).write();
+    } else {
+      db.get('exchangeRates').push(entry).write();
+    }
+    res.json({ ok: true, entry });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ---- Treasury Bill / Bond Yields ----
+app.get('/api/tbills', (req, res) => {
+  res.json(db.get('tbills').value());
+});
+
+app.post('/api/admin/tbills', requireAdmin, (req, res) => {
+  db.get('tbills').push(req.body).write();
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/tbills/:index', requireAdmin, (req, res) => {
+  const idx = parseInt(req.params.index, 10);
+  const rows = db.get('tbills').value();
+  rows.splice(idx, 1);
+  db.set('tbills', rows).write();
+  res.json({ ok: true });
+});
+
+// ---- Open Market Operations / Liquidity ----
+app.get('/api/omo', (req, res) => {
+  res.json(db.get('omo').sortBy('date').value());
+});
+
+app.post('/api/admin/omo', requireAdmin, (req, res) => {
+  db.get('omo').push(req.body).write();
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/omo/:index', requireAdmin, (req, res) => {
+  const idx = parseInt(req.params.index, 10);
+  const rows = db.get('omo').value();
+  rows.splice(idx, 1);
+  db.set('omo', rows).write();
+  res.json({ ok: true });
+});
+
+// ---- Foreign Reserves ----
+app.get('/api/reserves', (req, res) => {
+  res.json(db.get('foreignReserves').sortBy('month').value());
+});
+
+app.post('/api/admin/reserves', requireAdmin, (req, res) => {
+  const { month, amountUSD, source } = req.body;
+  const existing = db.get('foreignReserves').find({ month }).value();
+  if (existing) {
+    db.get('foreignReserves').find({ month }).assign({ amountUSD, source }).write();
+  } else {
+    db.get('foreignReserves').push({ month, amountUSD, source }).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/reserves/:month', requireAdmin, (req, res) => {
+  db.get('foreignReserves').remove({ month: req.params.month }).write();
   res.json({ ok: true });
 });
 
