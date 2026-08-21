@@ -58,5 +58,8 @@
   ],
   "foreignReserves": [
     {"month": "2026-07", "amountUSD": 480000000, "source": "RBM Reserves Report, Jul 2026"}
+  ],
+  "news": [
+    {"title": "RBM maintains Policy Rate at 24.0%", "summary": "The Monetary Policy Committee kept the rate unchanged at its third 2026 meeting, citing continued disinflation.", "link": "https://www.rbm.mw", "date": "2026-08-15"}
   ]
 }
