@@ -44,5 +44,19 @@
     "phone": "Toll-free 459",
     "website": "www.rbm.mw"
   },
-  "faqLog": []
+  "faqLog": [],
+  "exchangeRates": [
+    {"date": "2026-08-17", "usd": 1733.67, "gbp": 2195.4, "zar": 96.85, "source": "Trading Economics"}
+  ],
+  "tbills": [
+    {"date": "2026-08-01", "tenor": "91-day", "yield": 21.5, "source": "RBM Treasury Bill Auction"},
+    {"date": "2026-08-01", "tenor": "182-day", "yield": 22.8, "source": "RBM Treasury Bill Auction"},
+    {"date": "2026-08-01", "tenor": "364-day", "yield": 24.1, "source": "RBM Treasury Bill Auction"}
+  ],
+  "omo": [
+    {"date": "2026-08-15", "action": "Withdrawing liquidity", "amount": null, "source": "RBM OMO Statement"}
+  ],
+  "foreignReserves": [
+    {"month": "2026-07", "amountUSD": 480000000, "source": "RBM Reserves Report, Jul 2026"}
+  ]
 }
