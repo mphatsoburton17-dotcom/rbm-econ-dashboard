@@ -36,7 +36,6 @@ async function loadDashboard() {
   const { previous } = summary;
   const latest = summary.latest || { headline: 0, food: null, nonFood: null };
 
-  // Fall back to safe placeholder objects if these haven't been filled in yet via admin
   const policyRates = (summary.policyRates && summary.policyRates.policyRate !== undefined)
     ? summary.policyRates
     : { policyRate: '—', lombardRate: '—', liquidityReserveLocal: '—', liquidityReserveForeign: '—', moneySupplyGrowth: '—' };
@@ -49,7 +48,6 @@ async function loadDashboard() {
     ? summary.growthOutlook
     : { projection2026: '—', previousProjection: '—' };
 
-  // ---- KPI cards ----
   const hDelta = fmtDelta(latest.headline, previous ? previous.headline : null);
   const fDelta = fmtDelta(latest.food, previous ? previous.food : null);
   const nfDelta = fmtDelta(latest.nonFood, previous ? previous.nonFood : null);
@@ -75,19 +73,16 @@ async function loadDashboard() {
   document.getElementById('tickerPolicy').textContent = policyRates.policyRate + '%';
   document.getElementById('tickerGrowth').textContent = growthOutlook.projection2026 + '%';
 
-  // ---- Policy rates panel ----
   document.getElementById('rtPolicy').textContent = policyRates.policyRate + '%';
   document.getElementById('rtLombard').textContent = policyRates.lombardRate + '%';
   document.getElementById('rtLocal').textContent = policyRates.liquidityReserveLocal + '%';
   document.getElementById('rtForeign').textContent = policyRates.liquidityReserveForeign + '%';
   document.getElementById('rtMoney').textContent = policyRates.moneySupplyGrowth + '%';
 
-  // ---- Explainer sentence ----
   document.getElementById('explainerText').textContent =
     `Prices are still rising overall, but ${(latest.headline ?? 0) < (previous?.headline ?? Infinity) ? 'more slowly than last month' : 'faster than last month'} ` +
     `— headline inflation is now ${latest.headline ?? '—'}%, with food at ${latest.food ?? '—'}% and non-food at ${latest.nonFood ?? '—'}%.`;
 
-  // ---- Data table ----
   const tbody = document.getElementById('dataTableBody');
   tbody.innerHTML = '';
   entries.slice().reverse().forEach(r => {
@@ -96,7 +91,6 @@ async function loadDashboard() {
     tbody.appendChild(tr);
   });
 
-  // ---- Charts ----
   new Chart(document.getElementById('mainTrend'), {
     type: 'line',
     data: {
@@ -130,18 +124,6 @@ async function loadDashboard() {
       scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } }
     }
   });
-
-  // Calculator uses the real, current headline rate
-  window.CURRENT_HEADLINE_RATE = (latest.headline ?? 20.8) / 100;
-}
-
-function runCalc() {
-  const amt = parseFloat(document.getElementById('calcAmount').value) || 0;
-  const yrs = parseFloat(document.getElementById('calcYears').value) || 0;
-  const rate = window.CURRENT_HEADLINE_RATE || 0.208;
-  const futureValue = amt / Math.pow(1 + rate, yrs);
-  document.getElementById('calcResult').innerHTML =
-    `At today's ${(rate * 100).toFixed(1)}% annual inflation, <b>MWK ${amt.toLocaleString()}</b> today will have the buying power of roughly <b>MWK ${Math.round(futureValue).toLocaleString()}</b> in ${yrs} year${yrs == 1 ? '' : 's'}.`;
 }
 
 loadDashboard().catch(err => alert('DASHBOARD ERROR: ' + err.message));
