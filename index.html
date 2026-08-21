@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="pdf-report.js"></script>
+<script src="financial-markets.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -86,6 +87,19 @@
     </div>
   </div>
 
+  <div class="kpi-grid" style="margin-top:12px;">
+    <div class="kpi">
+      <div class="label">Exchange Rate (USD/MWK)</div>
+      <div class="value" id="fxValue">—</div>
+      <div class="delta" id="fxDelta"></div>
+    </div>
+    <div class="kpi">
+      <div class="label">Foreign Reserves</div>
+      <div class="value" id="reservesValue">—</div>
+      <div class="delta" id="reservesDelta"></div>
+    </div>
+  </div>
+
   <div class="section-title"><span data-en="Inflation Trend" data-ny="Mmene Mitengo Yakhala Ikuyendera">Inflation Trend</span> <span class="tag" data-en="Real, sourced monthly data" data-ny="Ziwerengero zenizeni">Real, sourced monthly data</span></div>
   <div class="panel-grid">
     <div class="panel">
@@ -113,6 +127,18 @@
     <div class="panel">
       <h3 data-en="What this means" data-ny="Zikutanthauza chiyani">What this means</h3>
       <div class="explainer" id="explainerText" style="margin-top:0;">Loading…</div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:16px;">
+    <div class="panel">
+      <h3>USD/MWK Trend</h3>
+      <div class="chart-box small"><canvas id="fxChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Treasury Bill Yields</h3>
+      <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Date</th></tr></thead><tbody id="tbillTable"></tbody></table>
+      <div id="omoStatus" style="margin-top:14px;padding:10px 14px;background:#FAF6EC;border-radius:8px;font-size:13px;font-weight:700;color:#8F6620;"></div>
     </div>
   </div>
 
