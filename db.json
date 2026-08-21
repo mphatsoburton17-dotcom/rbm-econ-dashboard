@@ -1,15 +1,85 @@
 {
   "entries": [
-    {"month": "2025-10", "label": "Oct 2025", "headline": 29.1, "food": null, "nonFood": null, "source": "The Nation / NSO"},
-    {"month": "2025-11", "label": "Nov 2025", "headline": 27.9, "food": 30.1, "nonFood": 24.2, "source": "Trading Economics / NSO"},
-    {"month": "2025-12", "label": "Dec 2025", "headline": 26.0, "food": 26.5, "nonFood": 25.2, "source": "Trading Economics / NSO"},
-    {"month": "2026-01", "label": "Jan 2026", "headline": 24.9, "food": 22.1, "nonFood": 29.8, "source": "Trading Economics / NSO"},
-    {"month": "2026-02", "label": "Feb 2026", "headline": 24.1, "food": 20.8, "nonFood": 30.0, "source": "Trading Economics / NSO"},
-    {"month": "2026-03", "label": "Mar 2026", "headline": 23.8, "food": 20.0, "nonFood": 30.7, "source": "Trading Economics / NSO"},
-    {"month": "2026-04", "label": "Apr 2026", "headline": 24.3, "food": 19.1, "nonFood": 33.2, "source": "Trading Economics / NSO"},
-    {"month": "2026-05", "label": "May 2026", "headline": 23.4, "food": 17.6, "nonFood": 33.0, "source": "Trading Economics / NSO"},
-    {"month": "2026-06", "label": "Jun 2026", "headline": 21.1, "food": 14.7, "nonFood": 32.1, "source": "RBM/NSO CPI Release"},
-    {"month": "2026-07", "label": "Jul 2026", "headline": 20.8, "food": 14.3, "nonFood": 32.2, "source": "RBM/NSO CPI Release, Jul 2026"}
+    {
+      "month": "2025-10",
+      "label": "Oct 2025",
+      "headline": 29.1,
+      "food": null,
+      "nonFood": null,
+      "source": "The Nation / NSO"
+    },
+    {
+      "month": "2025-11",
+      "label": "Nov 2025",
+      "headline": 27.9,
+      "food": 30.1,
+      "nonFood": 24.2,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2025-12",
+      "label": "Dec 2025",
+      "headline": 26.0,
+      "food": 26.5,
+      "nonFood": 25.2,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2026-01",
+      "label": "Jan 2026",
+      "headline": 24.9,
+      "food": 22.1,
+      "nonFood": 29.8,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2026-02",
+      "label": "Feb 2026",
+      "headline": 24.1,
+      "food": 20.8,
+      "nonFood": 30.0,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2026-03",
+      "label": "Mar 2026",
+      "headline": 23.8,
+      "food": 20.0,
+      "nonFood": 30.7,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2026-04",
+      "label": "Apr 2026",
+      "headline": 24.3,
+      "food": 19.1,
+      "nonFood": 33.2,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2026-05",
+      "label": "May 2026",
+      "headline": 23.4,
+      "food": 17.6,
+      "nonFood": 33.0,
+      "source": "Trading Economics / NSO"
+    },
+    {
+      "month": "2026-06",
+      "label": "Jun 2026",
+      "headline": 21.1,
+      "food": 14.7,
+      "nonFood": 32.1,
+      "source": "RBM/NSO CPI Release"
+    },
+    {
+      "month": "2026-07",
+      "label": "Jul 2026",
+      "headline": 20.8,
+      "food": 14.3,
+      "nonFood": 32.2,
+      "source": "RBM/NSO CPI Release, Jul 2026"
+    }
   ],
   "policyRates": {
     "policyRate": 24.0,
@@ -20,8 +90,16 @@
     "asOf": "Aug 2026 MPC Dashboard"
   },
   "urbanRural": {
-    "urban": {"monthly": 1.4, "food": 2.3, "nonFood": 0.3},
-    "rural": {"monthly": 2.6, "food": 3.0, "nonFood": 2.0},
+    "urban": {
+      "monthly": 1.4,
+      "food": 2.3,
+      "nonFood": 0.3
+    },
+    "rural": {
+      "monthly": 2.6,
+      "food": 3.0,
+      "nonFood": 2.0
+    },
     "asOf": "Jul 2026"
   },
   "growthOutlook": {
@@ -30,15 +108,43 @@
     "asOf": "Aug 2026 MPC Dashboard"
   },
   "yearlyAverages": [
-    {"year": "2020", "avg": 8.63, "source": "World Bank / IMF"},
-    {"year": "2021", "avg": 9.33, "source": "World Bank / IMF"},
-    {"year": "2022", "avg": 20.95, "source": "World Bank / IMF"},
-    {"year": "2023", "avg": 28.79, "source": "World Bank / IMF"},
-    {"year": "2024", "avg": 32.18, "source": "World Bank / IMF"},
-    {"year": "2025", "avg": 27.6, "source": "Estimated from monthly RBM/NSO releases (partial year)"},
-    {"year": "2026 (YTD)", "avg": 23.6, "source": "Average of Jan-Jul 2026 RBM/NSO releases"}
+    {
+      "year": "2020",
+      "avg": 8.63,
+      "source": "World Bank / IMF"
+    },
+    {
+      "year": "2021",
+      "avg": 9.33,
+      "source": "World Bank / IMF"
+    },
+    {
+      "year": "2022",
+      "avg": 20.95,
+      "source": "World Bank / IMF"
+    },
+    {
+      "year": "2023",
+      "avg": 28.79,
+      "source": "World Bank / IMF"
+    },
+    {
+      "year": "2024",
+      "avg": 32.18,
+      "source": "World Bank / IMF"
+    },
+    {
+      "year": "2025",
+      "avg": 27.6,
+      "source": "Estimated from monthly RBM/NSO releases (partial year)"
+    },
+    {
+      "year": "2026 (YTD)",
+      "avg": 23.6,
+      "source": "Average of Jan-Jul 2026 RBM/NSO releases"
+    }
   ],
-  "explainerText": "Prices are still rising overall, but more slowly than late 2025 — driven mainly by easing food costs. Non-food items (fuel, transport, imported goods) remain the bigger pressure on households.",
+  "explainerText": "Prices are still rising overall, but more slowly than late 2025 \u2014 driven mainly by easing food costs. Non-food items (fuel, transport, imported goods) remain the bigger pressure on households.",
   "contactSettings": {
     "email": "reserve-bank@rbm.mw",
     "phone": "Toll-free 459",
@@ -46,20 +152,55 @@
   },
   "faqLog": [],
   "exchangeRates": [
-    {"date": "2026-08-17", "usd": 1733.67, "gbp": 2195.4, "zar": 96.85, "source": "Trading Economics"}
+    {
+      "date": "2026-08-17",
+      "usd": 1733.67,
+      "gbp": 2195.4,
+      "zar": 96.85,
+      "source": "Trading Economics"
+    }
   ],
   "tbills": [
-    {"date": "2026-08-01", "tenor": "91-day", "yield": 21.5, "source": "RBM Treasury Bill Auction"},
-    {"date": "2026-08-01", "tenor": "182-day", "yield": 22.8, "source": "RBM Treasury Bill Auction"},
-    {"date": "2026-08-01", "tenor": "364-day", "yield": 24.1, "source": "RBM Treasury Bill Auction"}
+    {
+      "date": "2026-08-01",
+      "tenor": "91-day",
+      "yield": 21.5,
+      "source": "RBM Treasury Bill Auction"
+    },
+    {
+      "date": "2026-08-01",
+      "tenor": "182-day",
+      "yield": 22.8,
+      "source": "RBM Treasury Bill Auction"
+    },
+    {
+      "date": "2026-08-01",
+      "tenor": "364-day",
+      "yield": 24.1,
+      "source": "RBM Treasury Bill Auction"
+    }
   ],
   "omo": [
-    {"date": "2026-08-15", "action": "Withdrawing liquidity", "amount": null, "source": "RBM OMO Statement"}
+    {
+      "date": "2026-08-15",
+      "action": "Withdrawing liquidity",
+      "amount": null,
+      "source": "RBM OMO Statement"
+    }
   ],
   "foreignReserves": [
-    {"month": "2026-07", "amountUSD": 480000000, "source": "RBM Reserves Report, Jul 2026"}
+    {
+      "month": "2026-07",
+      "amountUSD": 480000000,
+      "source": "RBM Reserves Report, Jul 2026"
+    }
   ],
   "news": [
-    {"title": "RBM maintains Policy Rate at 24.0%", "summary": "The Monetary Policy Committee kept the rate unchanged at its third 2026 meeting, citing continued disinflation.", "link": "https://www.rbm.mw", "date": "2026-08-15"}
+    {
+      "title": "RBM maintains Policy Rate at 24.0%",
+      "summary": "The Monetary Policy Committee kept the rate unchanged at its third 2026 meeting, citing continued disinflation.",
+      "link": "https://www.rbm.mw",
+      "date": "2026-08-15"
+    }
   ]
 }
