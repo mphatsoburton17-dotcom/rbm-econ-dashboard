@@ -1,129 +1,223 @@
-// Dashboard page logic — fetches real data from the backend API and draws the charts.
-// No numbers are hardcoded here; everything comes from /api/entries and /api/summary.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malawi Economic Indicators — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="pdf-report.js"></script>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ---- Nav overflow menu ("⋯") — shared across pages ---- */
+  .nav-more { position: relative; display: inline-block; }
+  .nav-more-btn {
+    font: inherit; cursor: pointer; border-radius: 999px;
+    padding: 10px 16px; border: 1px solid rgba(0,0,0,0.12);
+    background: transparent; color: inherit; font-weight: 700;
+    letter-spacing: 0.04em; line-height: 1;
+  }
+  .nav-more-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 12px 28px rgba(43,32,10,0.18);
+    min-width: 168px; padding: 6px; z-index: 40;
+  }
+  .nav-more-panel.open { display: block; }
+  .nav-more-panel a {
+    display: block; padding: 10px 12px; border-radius: 8px;
+    color: #4a3c1f; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-more-panel a:hover { background: #F1EAD8; }
+</style>
+</head>
+<body>
+<div class="wrap">
 
-Chart.defaults.font.family = "'Inter', sans-serif";
-Chart.defaults.color = '#8a7f63';
+  <div class="banner">
+    <b>Independent prototype</b> — built from the Reserve Bank of Malawi's own published releases. Not affiliated with or endorsed by RBM. Every figure below is a real, sourced value — see the <a href="sources.html">Sources page</a>.
+  </div>
 
-const EXPLANATIONS = {
-  headline: "This shows how much more expensive things are now compared to a year ago. If it's 20%, something that cost MK1,000 last year now costs about MK1,200.",
-  food: "The price of things like maize, rice, and vegetables compared to a year ago.",
-  nonFood: "The price of things that aren't food — fuel, rent, transport, clothing — compared to a year ago.",
-  mom: "How much prices moved in just the last month, compared to the month before.",
-  policyRate: "The interest rate the Reserve Bank sets. When it goes up, loans usually get more expensive. When it goes down, borrowing gets cheaper.",
-  growth: "How much bigger the economy is expected to get this year, compared to last year."
-};
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title" data-en="Malawi Economic Indicators" data-ny="Ziwerengero za Chuma cha Malawi">Malawi Economic<br>Indicators</div>
+          <div class="hero-sub" data-en="The Reserve Bank's published data, made explorable — updated every month." data-ny="Ziwerengero za Reserve Bank, zosavuta kuzimvetsa — zimasinthidwa mwezi uliwonse.">The Reserve Bank's published data, made explorable — updated every month.</div>
+        </div>
+      </div>
+      <div class="hero-nav">
+        <a class="navbtn active" href="index.html" data-en="Dashboard" data-ny="Dashboard">Dashboard</a>
+        <a class="navbtn" href="learn.html" data-en="Learn" data-ny="Phunzirani">Learn</a>
+        <a class="navbtn" href="tools.html" data-en="Tools" data-ny="Zida">Tools</a>
+        <div class="nav-more">
+          <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">⋯</button>
+          <div class="nav-more-panel" id="navMorePanel">
+            <a href="about.html" data-en="About" data-ny="Za ife">About</a>
+            <a href="sources.html" data-en="Sources" data-ny="Magwero">Sources</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lang-toggle" style="margin-top:16px;">
+      <button class="active" onclick="setLang('en', this)">English</button>
+      <button onclick="setLang('ny', this)">Chichewa</button>
+    </div>
+    <div class="ticker">
+      <div class="pill"><span data-en="Headline Inflation" data-ny="Inflation Yayikulu">Headline Inflation</span> <b id="tickerHeadline">—</b></div>
+      <div class="pill"><span data-en="Policy Rate" data-ny="Policy Rate">Policy Rate</span> <b id="tickerPolicy">—</b></div>
+      <div class="pill"><span data-en="2026 Growth Projection" data-ny="Kukula kwa Chuma 2026">2026 Growth Projection</span> <b id="tickerGrowth">—</b></div>
+      <div class="pill"><span data-en="Next MPC Meeting" data-ny="Msonkhano Wotsatira wa MPC">Next MPC Meeting</span> <b>28–29 Oct 2026</b></div>
+    </div>
+  </div>
 
-function toggleExplain(id) {
-  const el = document.getElementById(id);
-  el.classList.toggle('show');
-}
+  <button onclick="downloadReport()" style="margin:20px 0 0; padding:12px 22px; border-radius:10px; border:none; background:#8F6620; color:#fff; font-weight:700; font-size:13px; cursor:pointer;" data-en="📄 Download This Month's Report (PDF)" data-ny="📄 Tsitsani Lipoti la Mwezi Uno (PDF)">📄 Download This Month's Report (PDF)</button>
 
-function fmtDelta(curr, prev) {
-  if (prev === null || prev === undefined || curr === null || curr === undefined) return { text: '', cls: '' };
-  const diff = +(curr - prev).toFixed(1);
-  if (diff === 0) return { text: 'unchanged', cls: '' };
-  const cls = diff > 0 ? 'up' : 'down';
-  const arrow = diff > 0 ? '↑' : '↓';
-  return { text: `${arrow} ${Math.abs(diff)}pp vs prior month`, cls };
-}
+  <div class="section-title"><span data-en="Key Indicators" data-ny="Ziwerengero Zazikulu">Key Indicators</span> <span class="tag" data-en="Latest release" data-ny="Zaposachedwa">Latest release</span></div>
+  <div class="kpi-grid">
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-headline')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Headline Inflation" data-ny="Inflation Yayikulu">Headline Inflation</div>
+      <div class="value" id="kpiHeadline">—</div>
+      <div class="delta" id="kpiHeadlineDelta"></div>
+      <div class="explain-text" id="exp-headline" data-en="This shows how much more expensive things are now compared to a year ago." data-ny="Ikusonyeza kuti zinthu zawonjezeka mtengo bwanji poyerekeza ndi chaka chatha.">This shows how much more expensive things are now compared to a year ago.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-food')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Food Inflation" data-ny="Mtengo wa Zakudya">Food Inflation</div>
+      <div class="value" id="kpiFood">—</div>
+      <div class="delta" id="kpiFoodDelta"></div>
+      <div class="explain-text" id="exp-food" data-en="The price of things like maize, rice, and vegetables, compared to a year ago." data-ny="Mtengo wa zinthu monga chimanga, mpunga, ndi masamba, poyerekeza ndi chaka chatha.">The price of things like maize, rice, and vegetables, compared to a year ago.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-nonfood')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Non-Food Inflation" data-ny="Zosati Zakudya">Non-Food Inflation</div>
+      <div class="value" id="kpiNonFood">—</div>
+      <div class="delta" id="kpiNonFoodDelta"></div>
+      <div class="explain-text" id="exp-nonfood" data-en="The price of fuel, rent, transport, and other non-food items, compared to a year ago." data-ny="Mtengo wa mafuta, nyumba, pa transport, ndi zina zosati zakudya, poyerekeza ndi chaka chatha.">The price of fuel, rent, transport, and other non-food items, compared to a year ago.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-policy')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="Policy Rate" data-ny="Policy Rate">Policy Rate</div>
+      <div class="value" id="kpiPolicyRate">—</div>
+      <div class="delta" data-en="maintained" data-ny="sinasinthe">maintained</div>
+      <div class="explain-text" id="exp-policy" data-en="The interest rate the Reserve Bank sets. When it rises, loans usually get more expensive." data-ny="Interest rate yomwe Reserve Bank imayika. Ikakwera, ngongole zimadula.">The interest rate the Reserve Bank sets. When it rises, loans usually get more expensive.</div>
+    </div>
+    <div class="kpi">
+      <button class="explain-btn" onclick="toggleExplain('exp-growth')" data-en="What's this?" data-ny="Ndi chiyani?">What's this?</button>
+      <div class="label" data-en="2026 Growth Outlook" data-ny="Kukula kwa Chuma 2026">2026 Growth Outlook</div>
+      <div class="value" id="kpiGrowth">—</div>
+      <div class="delta down" id="kpiGrowthDelta"></div>
+      <div class="explain-text" id="exp-growth" data-en="How much bigger the economy is expected to get this year." data-ny="Momwe chuma cha dziko chikuyembekezeka kukulira chaka chino.">How much bigger the economy is expected to get this year.</div>
+    </div>
+  </div>
 
-async function loadDashboard() {
-  const [entries, summary] = await Promise.all([
-    fetch('/api/entries').then(r => r.json()),
-    fetch('/api/summary').then(r => r.json())
-  ]);
+  <div class="section-title"><span data-en="Inflation Trend" data-ny="Mmene Mitengo Yakhala Ikuyendera">Inflation Trend</span> <span class="tag" data-en="Real, sourced monthly data" data-ny="Ziwerengero zenizeni">Real, sourced monthly data</span></div>
+  <div class="panel-grid">
+    <div class="panel">
+      <h3 data-en="Headline, Food & Non-Food Inflation" data-ny="Inflation Yayikulu, Zakudya ndi Zosati Zakudya">Headline, Food & Non-Food Inflation</h3>
+      <div class="desc" data-en="Every point below comes from an RBM/NSO release — see Sources for citations." data-ny="Ziwerengero zonse pansipa zimachokera ku RBM/NSO — onani Sources.">Every point below comes from an RBM/NSO release — see Sources for citations.</div>
+      <div class="chart-box"><canvas id="mainTrend"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3 data-en="Monetary Policy Rates" data-ny="Ziwerengero za Policy">Monetary Policy Rates</h3>
+      <div class="rate-table">
+        <div class="rate-row"><span class="rname" data-en="Policy Rate" data-ny="Policy Rate">Policy Rate</span><span class="rval" id="rtPolicy">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Lombard Rate" data-ny="Lombard Rate">Lombard Rate</span><span class="rval" id="rtLombard">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Liquidity Reserve — Local" data-ny="Liquidity Reserve — Local">Liquidity Reserve — Local</span><span class="rval" id="rtLocal">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Liquidity Reserve — Foreign" data-ny="Liquidity Reserve — Foreign">Liquidity Reserve — Foreign</span><span class="rval" id="rtForeign">—</span></div>
+        <div class="rate-row"><span class="rname" data-en="Money Supply Growth" data-ny="Kukula kwa Ndalama">Money Supply Growth</span><span class="rval" id="rtMoney">—</span></div>
+      </div>
+    </div>
+  </div>
 
-  const { previous } = summary;
-  const latest = summary.latest || { headline: 0, food: null, nonFood: null };
+  <div class="two-col">
+    <div class="panel">
+      <h3 data-en="Urban vs Rural — Monthly Inflation" data-ny="Mumzinda ndi Kumudzi — Inflation ya Mwezi">Urban vs Rural — Monthly Inflation</h3>
+      <div class="chart-box small"><canvas id="urbanRural"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3 data-en="What this means" data-ny="Zikutanthauza chiyani">What this means</h3>
+      <div class="explainer" id="explainerText" style="margin-top:0;">Loading…</div>
+    </div>
+  </div>
 
-  const policyRates = (summary.policyRates && summary.policyRates.policyRate !== undefined)
-    ? summary.policyRates
-    : { policyRate: '—', lombardRate: '—', liquidityReserveLocal: '—', liquidityReserveForeign: '—', moneySupplyGrowth: '—' };
+  <div class="section-title">Multi-Year View <span class="tag">Annual averages, World Bank/IMF</span></div>
+  <div class="panel">
+    <h3>Inflation by Year</h3>
+    <div class="desc">2020–2026, showing the longer trend beyond any single month.</div>
+    <div class="chart-box"><canvas id="yearlyChart"></canvas></div>
+  </div>
 
-  const urbanRural = (summary.urbanRural && summary.urbanRural.urban)
-    ? summary.urbanRural
-    : { urban: { monthly: 0, food: 0, nonFood: 0 }, rural: { monthly: 0, food: 0, nonFood: 0 } };
+  <button id="faqToggle">💬</button>
+  <div id="faqPanel">
+    <div class="faq-header">Ask about this data</div>
+    <div id="faqMessages"></div>
+    <div id="faqInputRow">
+      <input id="faqInput" type="text" placeholder="Ask a question...">
+      <button id="faqSend">Send</button>
+    </div>
+  </div>
 
-  const growthOutlook = (summary.growthOutlook && summary.growthOutlook.projection2026 !== undefined)
-    ? summary.growthOutlook
-    : { projection2026: '—', previousProjection: '—' };
+  <div class="section-title"><span data-en="Full Data Table" data-ny="Ziwerengero Zonse">Full Data Table</span> <span class="tag" data-en="Real, sourced values" data-ny="Ziwerengero Zenizeni">Real, sourced values</span></div>
+  <div class="panel">
+    <table class="data-table">
+      <thead><tr>
+        <th data-en="Month" data-ny="Mwezi">Month</th>
+        <th data-en="Headline" data-ny="Yayikulu">Headline</th>
+        <th data-en="Food" data-ny="Zakudya">Food</th>
+        <th data-en="Non-Food" data-ny="Zosati Zakudya">Non-Food</th>
+        <th data-en="Source" data-ny="Komwe Zachokera">Source</th>
+      </tr></thead>
+      <tbody id="dataTableBody"></tbody>
+    </table>
+  </div>
 
-  const hDelta = fmtDelta(latest.headline, previous ? previous.headline : null);
-  const fDelta = fmtDelta(latest.food, previous ? previous.food : null);
-  const nfDelta = fmtDelta(latest.nonFood, previous ? previous.nonFood : null);
+  <div class="footer">
+    <div class="left" data-en="Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication." data-ny="Ntchito yodziyimira payokha yopangidwa kuchokera ku ziwerengero za Reserve Bank of Malawi. Siyogwirizana ndi RBM. Ziwerengero zikhoza kusinthidwa ndi RBM.">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
 
-  document.getElementById('kpiHeadline').textContent = (latest.headline ?? '—') + '%';
-  document.getElementById('kpiHeadlineDelta').textContent = hDelta.text;
-  document.getElementById('kpiHeadlineDelta').className = 'delta ' + hDelta.cls;
-
-  document.getElementById('kpiFood').textContent = (latest.food ?? '—') + '%';
-  document.getElementById('kpiFoodDelta').textContent = fDelta.text;
-  document.getElementById('kpiFoodDelta').className = 'delta ' + fDelta.cls;
-
-  document.getElementById('kpiNonFood').textContent = (latest.nonFood ?? '—') + '%';
-  document.getElementById('kpiNonFoodDelta').textContent = nfDelta.text;
-  document.getElementById('kpiNonFoodDelta').className = 'delta ' + nfDelta.cls;
-
-  document.getElementById('kpiPolicyRate').textContent = policyRates.policyRate + '%';
-  document.getElementById('kpiGrowth').textContent = growthOutlook.projection2026 + '%';
-  document.getElementById('kpiGrowthDelta').textContent =
-    growthOutlook.previousProjection !== '—' ? `↓ from ${growthOutlook.previousProjection}%` : '';
-
-  document.getElementById('tickerHeadline').textContent = (latest.headline ?? '—') + '%';
-  document.getElementById('tickerPolicy').textContent = policyRates.policyRate + '%';
-  document.getElementById('tickerGrowth').textContent = growthOutlook.projection2026 + '%';
-
-  document.getElementById('rtPolicy').textContent = policyRates.policyRate + '%';
-  document.getElementById('rtLombard').textContent = policyRates.lombardRate + '%';
-  document.getElementById('rtLocal').textContent = policyRates.liquidityReserveLocal + '%';
-  document.getElementById('rtForeign').textContent = policyRates.liquidityReserveForeign + '%';
-  document.getElementById('rtMoney').textContent = policyRates.moneySupplyGrowth + '%';
-
-  document.getElementById('explainerText').textContent =
-    `Prices are still rising overall, but ${(latest.headline ?? 0) < (previous?.headline ?? Infinity) ? 'more slowly than last month' : 'faster than last month'} ` +
-    `— headline inflation is now ${latest.headline ?? '—'}%, with food at ${latest.food ?? '—'}% and non-food at ${latest.nonFood ?? '—'}%.`;
-
-  const tbody = document.getElementById('dataTableBody');
-  tbody.innerHTML = '';
-  entries.slice().reverse().forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.label}</td><td class="num">${r.headline}%</td><td class="num">${r.food !== null ? r.food + '%' : '—'}</td><td class="num">${r.nonFood !== null ? r.nonFood + '%' : '—'}</td><td style="font-size:11px;color:#9a8f74;">${r.source || ''}</td>`;
-    tbody.appendChild(tr);
-  });
-
-  new Chart(document.getElementById('mainTrend'), {
-    type: 'line',
-    data: {
-      labels: entries.map(r => r.label),
-      datasets: [
-        { label: 'Headline', data: entries.map(r => r.headline), borderColor: '#B8862B', backgroundColor: 'rgba(184,134,43,0.08)', tension: 0.35, fill: true, borderWidth: 2.5, pointRadius: 2, spanGaps: true },
-        { label: 'Food', data: entries.map(r => r.food), borderColor: '#2E8B45', tension: 0.35, borderWidth: 2, pointRadius: 2, spanGaps: true },
-        { label: 'Non-Food', data: entries.map(r => r.nonFood), borderColor: '#C43D3D', tension: 0.35, borderWidth: 2, pointRadius: 2, spanGaps: true },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
-      scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } }
-    }
-  });
-
-  new Chart(document.getElementById('urbanRural'), {
+</div>
+<script src="dashboard.js"></script>
+<script src="faq-bot.js"></script>
+<script>
+fetch('/api/yearly').then(r => r.json()).then(yearly => {
+  new Chart(document.getElementById('yearlyChart'), {
     type: 'bar',
     data: {
-      labels: ['Urban', 'Rural'],
-      datasets: [
-        { label: 'Monthly Inflation', data: [urbanRural.urban.monthly, urbanRural.rural.monthly], backgroundColor: '#B8862B' },
-        { label: 'Food', data: [urbanRural.urban.food, urbanRural.rural.food], backgroundColor: '#2E8B45' },
-        { label: 'Non-Food', data: [urbanRural.urban.nonFood, urbanRural.rural.nonFood], backgroundColor: '#C43D3D' },
-      ]
+      labels: yearly.map(y => y.year),
+      datasets: [{ label: 'Average Inflation', data: yearly.map(y => y.avg), backgroundColor: '#B8862B' }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+      plugins: { legend: { display: false } },
       scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } }
     }
   });
-}
+});
+</script>
+<script>
+  function setLang(lang, btn) {
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const val = el.getAttribute('data-' + lang);
+      if (val !== null) el.textContent = val;
+    });
+    document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
 
-loadDashboard().catch(err => alert('DASHBOARD ERROR: ' + err.message));
+  function toggleNavMore(btn) {
+    const panel = document.getElementById('navMorePanel');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.nav-more');
+    const panel = document.getElementById('navMorePanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
+  });
+</script>
+</body>
+</html>
