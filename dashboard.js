@@ -19,7 +19,7 @@ function toggleExplain(id) {
 }
 
 function fmtDelta(curr, prev) {
-  if (prev === null || prev === undefined || curr === null) return { text: '', cls: '' };
+  if (prev === null || prev === undefined || curr === null || curr === undefined) return { text: '', cls: '' };
   const diff = +(curr - prev).toFixed(1);
   if (diff === 0) return { text: 'unchanged', cls: '' };
   const cls = diff > 0 ? 'up' : 'down';
@@ -33,14 +33,28 @@ async function loadDashboard() {
     fetch('/api/summary').then(r => r.json())
   ]);
 
-  const { latest, previous, policyRates, urbanRural, growthOutlook } = summary;
+  const { previous } = summary;
+  const latest = summary.latest || { headline: 0, food: null, nonFood: null };
+
+  // Fall back to safe placeholder objects if these haven't been filled in yet via admin
+  const policyRates = (summary.policyRates && summary.policyRates.policyRate !== undefined)
+    ? summary.policyRates
+    : { policyRate: '—', lombardRate: '—', liquidityReserveLocal: '—', liquidityReserveForeign: '—', moneySupplyGrowth: '—' };
+
+  const urbanRural = (summary.urbanRural && summary.urbanRural.urban)
+    ? summary.urbanRural
+    : { urban: { monthly: 0, food: 0, nonFood: 0 }, rural: { monthly: 0, food: 0, nonFood: 0 } };
+
+  const growthOutlook = (summary.growthOutlook && summary.growthOutlook.projection2026 !== undefined)
+    ? summary.growthOutlook
+    : { projection2026: '—', previousProjection: '—' };
 
   // ---- KPI cards ----
   const hDelta = fmtDelta(latest.headline, previous ? previous.headline : null);
   const fDelta = fmtDelta(latest.food, previous ? previous.food : null);
   const nfDelta = fmtDelta(latest.nonFood, previous ? previous.nonFood : null);
 
-  document.getElementById('kpiHeadline').textContent = latest.headline + '%';
+  document.getElementById('kpiHeadline').textContent = (latest.headline ?? '—') + '%';
   document.getElementById('kpiHeadlineDelta').textContent = hDelta.text;
   document.getElementById('kpiHeadlineDelta').className = 'delta ' + hDelta.cls;
 
@@ -55,9 +69,9 @@ async function loadDashboard() {
   document.getElementById('kpiPolicyRate').textContent = policyRates.policyRate + '%';
   document.getElementById('kpiGrowth').textContent = growthOutlook.projection2026 + '%';
   document.getElementById('kpiGrowthDelta').textContent =
-    `↓ from ${growthOutlook.previousProjection}%`;
+    growthOutlook.previousProjection !== '—' ? `↓ from ${growthOutlook.previousProjection}%` : '';
 
-  document.getElementById('tickerHeadline').textContent = latest.headline + '%';
+  document.getElementById('tickerHeadline').textContent = (latest.headline ?? '—') + '%';
   document.getElementById('tickerPolicy').textContent = policyRates.policyRate + '%';
   document.getElementById('tickerGrowth').textContent = growthOutlook.projection2026 + '%';
 
@@ -70,8 +84,8 @@ async function loadDashboard() {
 
   // ---- Explainer sentence ----
   document.getElementById('explainerText').textContent =
-    `Prices are still rising overall, but ${latest.headline < previous?.headline ? 'more slowly than last month' : 'faster than last month'} ` +
-    `— headline inflation is now ${latest.headline}%, with food at ${latest.food ?? '—'}% and non-food at ${latest.nonFood ?? '—'}%.`;
+    `Prices are still rising overall, but ${(latest.headline ?? 0) < (previous?.headline ?? Infinity) ? 'more slowly than last month' : 'faster than last month'} ` +
+    `— headline inflation is now ${latest.headline ?? '—'}%, with food at ${latest.food ?? '—'}% and non-food at ${latest.nonFood ?? '—'}%.`;
 
   // ---- Data table ----
   const tbody = document.getElementById('dataTableBody');
@@ -118,7 +132,7 @@ async function loadDashboard() {
   });
 
   // Calculator uses the real, current headline rate
-  window.CURRENT_HEADLINE_RATE = latest.headline / 100;
+  window.CURRENT_HEADLINE_RATE = (latest.headline ?? 20.8) / 100;
 }
 
 function runCalc() {
@@ -130,4 +144,4 @@ function runCalc() {
     `At today's ${(rate * 100).toFixed(1)}% annual inflation, <b>MWK ${amt.toLocaleString()}</b> today will have the buying power of roughly <b>MWK ${Math.round(futureValue).toLocaleString()}</b> in ${yrs} year${yrs == 1 ? '' : 's'}.`;
 }
 
-loadDashboard();
+loadDashboard().catch(err => alert('DASHBOARD ERROR: ' + err.message));
