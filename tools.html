@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Tools — Malawi Economic Indicators</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .nav-more { position: relative; display: inline-block; }
+  .nav-more-btn {
+    font: inherit; cursor: pointer; border-radius: 999px;
+    padding: 10px 16px; border: 1px solid rgba(0,0,0,0.12);
+    background: transparent; color: inherit; font-weight: 700;
+    letter-spacing: 0.04em; line-height: 1;
+  }
+  .nav-more-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 12px 28px rgba(43,32,10,0.18);
+    min-width: 168px; padding: 6px; z-index: 40;
+  }
+  .nav-more-panel.open { display: block; }
+  .nav-more-panel a {
+    display: block; padding: 10px 12px; border-radius: 8px;
+    color: #4a3c1f; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-more-panel a:hover { background: #F1EAD8; }
+
+  .tool-note {
+    font-size: 13px; color: #8a7f63; margin-top: 10px; line-height: 1.5;
+  }
+  .swap-btn {
+    border: 1px solid rgba(0,0,0,0.12); background: #fff; border-radius: 999px;
+    width: 38px; height: 38px; cursor: pointer; font-size: 16px; line-height: 1;
+    align-self: flex-end; margin-bottom: 4px;
+  }
+  .disclaimer-box {
+    margin-top: 28px; padding: 16px 18px; border-radius: 12px;
+    background: #F1EAD8; color: #6b5f45; font-size: 13px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="banner">
+    <b>Independent prototype</b> — built from the Reserve Bank of Malawi's own published releases. Not affiliated with or endorsed by RBM. Every figure below is a real, sourced value — see the <a href="sources.html">Sources page</a>.
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title">Financial Tools</div>
+          <div class="hero-sub">Everyday calculators built on RBM's own published rates.</div>
+        </div>
+      </div>
+      <div class="hero-nav">
+        <a class="navbtn" href="index.html">Dashboard</a>
+        <a class="navbtn" href="learn.html">Learn</a>
+        <a class="navbtn active" href="tools.html">Tools</a>
+        <div class="nav-more">
+          <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">⋯</button>
+          <div class="nav-more-panel" id="navMorePanel">
+            <a href="about.html">About</a>
+            <a href="sources.html">Sources</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title"><span>Currency Converter</span> <span class="tag" id="fxAsOf">Loading rate…</span></div>
+  <div class="calc">
+    <h3>Convert MWK ↔ USD / GBP / ZAR</h3>
+    <div class="desc">Uses the most recently published exchange rate.</div>
+
+    <div class="calc-row" style="align-items:flex-end;">
+      <div class="calc-field">
+        <label>Amount</label>
+        <input type="number" id="fxAmount" value="100000">
+      </div>
+      <div class="calc-field">
+        <label>From</label>
+        <select id="fxFrom" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15);">
+          <option value="MWK">MWK</option>
+          <option value="USD">USD</option>
+          <option value="GBP">GBP</option>
+          <option value="ZAR">ZAR</option>
+        </select>
+      </div>
+      <button class="swap-btn" onclick="swapFx()" title="Swap">⇄</button>
+      <div class="calc-field">
+        <label>To</label>
+        <select id="fxTo" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15);">
+          <option value="USD">USD</option>
+          <option value="MWK">MWK</option>
+          <option value="GBP">GBP</option>
+          <option value="ZAR">ZAR</option>
+        </select>
+      </div>
+    </div>
+    <button onclick="runConvert()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Convert</button>
+    <div class="calc-result" id="fxResult">Enter an amount and press Convert.</div>
+  </div>
+
+  <div class="section-title"><span>Inflation Impact Calculator</span> <span class="tag">Tool</span></div>
+  <div class="calc">
+    <h3>What will your money be worth?</h3>
+    <div class="desc">See how current inflation affects the real value of money over time.</div>
+    <div class="calc-row">
+      <div class="calc-field"><label>Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
+      <div class="calc-field"><label>Over how many years</label><input type="number" id="calcYears" value="1"></div>
+      <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
+    </div>
+    <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+  </div>
+
+  <div class="disclaimer-box">
+    These tools use RBM's own published rates but are independent estimates, not financial advice. Loan cost figures are based on the current Policy Rate only — actual bank loans include their own added margin. Always confirm figures with your bank or a licensed advisor before making a financial decision.
+  </div>
+
+  <div class="footer">
+    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
+
+</div>
+
+<script>
+  function toggleNavMore(btn) {
+    const panel = document.getElementById('navMorePanel');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.nav-more');
+    const panel = document.getElementById('navMorePanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
+  });
+
+  // ---- Data loaded once on page load ----
+  let CURRENT_HEADLINE_RATE = 0.208;
+  let FX_RATES = null; // { usd, gbp, zar } = MWK per 1 unit of that currency
+
+  async function loadToolsData() {
+    try {
+      const summary = await fetch('/api/summary').then(r => r.json());
+      if (summary.latest && summary.latest.headline != null) {
+        CURRENT_HEADLINE_RATE = summary.latest.headline / 100;
+      }
+    } catch (e) { /* keep default */ }
+
+    try {
+      const rates = await fetch('/api/exchange-rates').then(r => r.json());
+      if (Array.isArray(rates) && rates.length) {
+        const latest = rates[rates.length - 1];
+        FX_RATES = { usd: latest.usd, gbp: latest.gbp, zar: latest.zar };
+        document.getElementById('fxAsOf').textContent = 'As of ' + latest.date;
+      } else {
+        document.getElementById('fxAsOf').textContent = 'No rate published yet';
+      }
+    } catch (e) {
+      document.getElementById('fxAsOf').textContent = 'Rate unavailable';
+    }
+  }
+
+  function toMwk(amount, currency) {
+    if (currency === 'MWK') return amount;
+    const rate = FX_RATES && FX_RATES[currency.toLowerCase()];
+    return rate ? amount * rate : null;
+  }
+  function fromMwk(amountMwk, currency) {
+    if (currency === 'MWK') return amountMwk;
+    const rate = FX_RATES && FX_RATES[currency.toLowerCase()];
+    return rate ? amountMwk / rate : null;
+  }
+
+  function swapFx() {
+    const from = document.getElementById('fxFrom');
+    const to = document.getElementById('fxTo');
+    const tmp = from.value;
+    from.value = to.value;
+    to.value = tmp;
+  }
+
+  function runConvert() {
+    const amt = parseFloat(document.getElementById('fxAmount').value) || 0;
+    const from = document.getElementById('fxFrom').value;
+    const to = document.getElementById('fxTo').value;
+    const resultEl = document.getElementById('fxResult');
+
+    if (!FX_RATES && (from !== 'MWK' || to !== 'MWK')) {
+      resultEl.textContent = 'No exchange rate has been published yet — check back once one is added.';
+      return;
+    }
+    const mwk = toMwk(amt, from);
+    if (mwk === null) { resultEl.textContent = 'That rate isn\'t available yet.'; return; }
+    const result = fromMwk(mwk, to);
+    if (result === null) { resultEl.textContent = 'That rate isn\'t available yet.'; return; }
+
+    resultEl.innerHTML = `<b>${amt.toLocaleString()} ${from}</b> ≈ <b>${result.toLocaleString(undefined, {maximumFractionDigits: 2})} ${to}</b>`;
+  }
+
+  function runCalc() {
+    const amt = parseFloat(document.getElementById('calcAmount').value) || 0;
+    const yrs = parseFloat(document.getElementById('calcYears').value) || 0;
+    const rate = CURRENT_HEADLINE_RATE || 0.208;
+    const futureValue = amt / Math.pow(1 + rate, yrs);
+    document.getElementById('calcResult').innerHTML =
+      `At today's ${(rate * 100).toFixed(1)}% annual inflation, <b>MWK ${amt.toLocaleString()}</b> today will have the buying power of roughly <b>MWK ${Math.round(futureValue).toLocaleString()}</b> in ${yrs} year${yrs == 1 ? '' : 's'}.`;
+  }
+
+  loadToolsData();
+</script>
+</body>
+</html>
+
