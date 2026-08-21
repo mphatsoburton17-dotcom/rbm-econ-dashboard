@@ -60,6 +60,10 @@
       <button class="adm-tab" onclick="showTab('faq', this)">FAQ Inbox</button>
       <button class="adm-tab" onclick="showTab('contact', this)">Contact & Settings</button>
       <button class="adm-tab" onclick="showTab('bulk', this)">Import / Export</button>
+      <button class="adm-tab" onclick="showTab('fx', this)">Exchange Rate</button>
+      <button class="adm-tab" onclick="showTab('tbills', this)">T-Bill Yields</button>
+      <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
+      <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
     </div>
 
     <!-- 1. OVERVIEW -->
@@ -203,6 +207,86 @@
       <div id="bulkMsg"></div>
     </div>
 
+
+    <!-- 10. EXCHANGE RATE -->
+    <div class="adm-section" id="tab-fx">
+      <h3>Exchange Rate</h3>
+      <div class="sub">USD/GBP/ZAR to MWK. Use "Fetch Latest Now" for a live pull, or enter manually below.</div>
+      <button class="adm-btn secondary" onclick="fetchLatestFx()">Fetch Latest Now (live)</button>
+      <div id="fxFetchMsg"></div>
+      <table class="adm-table">
+        <thead><tr><th>Date</th><th>USD</th><th>GBP</th><th>ZAR</th><th></th></tr></thead>
+        <tbody id="fxBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Date</label><input id="fxDate" placeholder="2026-08-20"></div>
+        <div class="adm-field"><label>USD/MWK</label><input type="number" step="0.01" id="fxUsd"></div>
+        <div class="adm-field"><label>GBP/MWK</label><input type="number" step="0.01" id="fxGbp"></div>
+        <div class="adm-field"><label>ZAR/MWK</label><input type="number" step="0.01" id="fxZar"></div>
+        <div class="adm-field"><label>Source</label><input id="fxSource" placeholder="Manual entry"></div>
+      </div>
+      <button class="adm-btn" onclick="saveFx()">Save Entry</button>
+      <div id="fxMsg"></div>
+    </div>
+
+    <!-- 11. T-BILLS -->
+    <div class="adm-section" id="tab-tbills">
+      <h3>Treasury Bill / Bond Yields</h3>
+      <table class="adm-table">
+        <thead><tr><th>Date</th><th>Tenor</th><th>Yield</th><th></th></tr></thead>
+        <tbody id="tbillBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Auction Date</label><input id="tbDate" placeholder="2026-08-01"></div>
+        <div class="adm-field"><label>Tenor</label>
+          <select id="tbTenor" style="padding:8px 10px;border-radius:8px;border:1px solid #ECE4D2;">
+            <option>91-day</option><option>182-day</option><option>364-day</option>
+          </select>
+        </div>
+        <div class="adm-field"><label>Yield (%)</label><input type="number" step="0.01" id="tbYield"></div>
+        <div class="adm-field"><label>Source</label><input id="tbSource" placeholder="RBM Treasury Bill Auction"></div>
+      </div>
+      <button class="adm-btn" onclick="saveTbill()">Add Entry</button>
+      <div id="tbillMsg"></div>
+    </div>
+
+    <!-- 12. OMO -->
+    <div class="adm-section" id="tab-omo">
+      <h3>Open Market Operations / Liquidity</h3>
+      <table class="adm-table">
+        <thead><tr><th>Date</th><th>Action</th><th>Amount</th><th></th></tr></thead>
+        <tbody id="omoBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Date</label><input id="omoDate" placeholder="2026-08-20"></div>
+        <div class="adm-field"><label>Action</label>
+          <select id="omoAction" style="padding:8px 10px;border-radius:8px;border:1px solid #ECE4D2;">
+            <option>Injecting liquidity</option><option>Withdrawing liquidity</option><option>No major operation</option>
+          </select>
+        </div>
+        <div class="adm-field"><label>Amount (MWK, optional)</label><input type="number" id="omoAmount"></div>
+        <div class="adm-field"><label>Source</label><input id="omoSource" placeholder="RBM OMO Statement"></div>
+      </div>
+      <button class="adm-btn" onclick="saveOmo()">Add Entry</button>
+      <div id="omoMsg"></div>
+    </div>
+
+    <!-- 13. FOREIGN RESERVES -->
+    <div class="adm-section" id="tab-reserves">
+      <h3>Foreign Reserves</h3>
+      <table class="adm-table">
+        <thead><tr><th>Month</th><th>Amount (USD)</th><th></th></tr></thead>
+        <tbody id="reservesBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Month</label><input id="resMonth" placeholder="2026-08"></div>
+        <div class="adm-field"><label>Amount (USD)</label><input type="number" id="resAmount" placeholder="480000000"></div>
+        <div class="adm-field"><label>Source</label><input id="resSource" placeholder="RBM Reserves Report"></div>
+      </div>
+      <button class="adm-btn" onclick="saveReserves()">Save Entry</button>
+      <div id="reservesMsg"></div>
+    </div>
+
   </div>
 </div>
 
@@ -221,6 +305,7 @@
       document.getElementById('loginBox').style.display = 'none';
       document.getElementById('panel').style.display = 'block';
       loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
+      loadFx(); loadTbills(); loadOmo(); loadReserves();
     } else {
       document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
     }
@@ -461,6 +546,113 @@
         a.href = url; a.download = 'inflation-data.csv';
         a.click();
       });
+  }
+
+
+  // ---- Exchange Rate ----
+  async function loadFx() {
+    const rows = await fetch('/api/exchange-rates').then(r => r.json());
+    const body = document.getElementById('fxBody');
+    body.innerHTML = '';
+    rows.slice().reverse().forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.date}</td><td>${r.usd}</td><td>${r.gbp ?? '—'}</td><td>${r.zar ?? '—'}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteFx('${r.date}')">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveFx() {
+    const body = { date: document.getElementById('fxDate').value, usd: parseFloat(document.getElementById('fxUsd').value),
+      gbp: parseFloat(document.getElementById('fxGbp').value) || null, zar: parseFloat(document.getElementById('fxZar').value) || null,
+      source: document.getElementById('fxSource').value };
+    const res = await fetch('/api/admin/exchange-rates', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('fxMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadFx();
+  }
+  async function deleteFx(date) {
+    await fetch('/api/admin/exchange-rates/' + date, { method: 'DELETE', headers: authHeaders() });
+    loadFx();
+  }
+  async function fetchLatestFx() {
+    document.getElementById('fxFetchMsg').innerHTML = '<div class="adm-msg ok">Fetching...</div>';
+    const res = await fetch('/api/fetch-exchange-rate').then(r => r.json());
+    document.getElementById('fxFetchMsg').innerHTML = res.ok
+      ? `<div class="adm-msg ok">Fetched: USD ${res.entry.usd} MWK</div>`
+      : `<div class="adm-msg err">${res.error}</div>`;
+    loadFx();
+  }
+
+  // ---- T-Bills ----
+  async function loadTbills() {
+    const rows = await fetch('/api/tbills').then(r => r.json());
+    const body = document.getElementById('tbillBody');
+    body.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.date}</td><td>${r.tenor}</td><td>${r.yield}%</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteTbill(${i})">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveTbill() {
+    const body = { date: document.getElementById('tbDate').value, tenor: document.getElementById('tbTenor').value,
+      yield: parseFloat(document.getElementById('tbYield').value), source: document.getElementById('tbSource').value };
+    const res = await fetch('/api/admin/tbills', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('tbillMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadTbills();
+  }
+  async function deleteTbill(i) {
+    await fetch('/api/admin/tbills/' + i, { method: 'DELETE', headers: authHeaders() });
+    loadTbills();
+  }
+
+  // ---- OMO ----
+  async function loadOmo() {
+    const rows = await fetch('/api/omo').then(r => r.json());
+    const body = document.getElementById('omoBody');
+    body.innerHTML = '';
+    rows.slice().reverse().forEach((r) => {
+      const i = rows.indexOf(r);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.date}</td><td>${r.action}</td><td>${r.amount ?? '—'}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteOmo(${i})">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveOmo() {
+    const body = { date: document.getElementById('omoDate').value, action: document.getElementById('omoAction').value,
+      amount: parseFloat(document.getElementById('omoAmount').value) || null, source: document.getElementById('omoSource').value };
+    const res = await fetch('/api/admin/omo', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('omoMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadOmo();
+  }
+  async function deleteOmo(i) {
+    await fetch('/api/admin/omo/' + i, { method: 'DELETE', headers: authHeaders() });
+    loadOmo();
+  }
+
+  // ---- Foreign Reserves ----
+  async function loadReserves() {
+    const rows = await fetch('/api/reserves').then(r => r.json());
+    const body = document.getElementById('reservesBody');
+    body.innerHTML = '';
+    rows.slice().reverse().forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.month}</td><td>$${(r.amountUSD/1000000).toFixed(1)}M</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteReserves('${r.month}')">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveReserves() {
+    const body = { month: document.getElementById('resMonth').value, amountUSD: parseFloat(document.getElementById('resAmount').value),
+      source: document.getElementById('resSource').value };
+    const res = await fetch('/api/admin/reserves', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('reservesMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadReserves();
+  }
+  async function deleteReserves(month) {
+    await fetch('/api/admin/reserves/' + month, { method: 'DELETE', headers: authHeaders() });
+    loadReserves();
   }
 </script>
 </body>
