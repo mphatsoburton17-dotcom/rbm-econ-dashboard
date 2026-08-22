@@ -60,6 +60,7 @@
       <button class="adm-tab" onclick="showTab('faq', this)">FAQ Inbox</button>
       <button class="adm-tab" onclick="showTab('contact', this)">Contact & Settings</button>
       <button class="adm-tab" onclick="showTab('bulk', this)">Import / Export</button>
+      <button class="adm-tab" onclick="showTab('news', this)">News</button>
       <button class="adm-tab" onclick="showTab('fx', this)">Exchange Rate</button>
       <button class="adm-tab" onclick="showTab('tbills', this)">T-Bill Yields</button>
       <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
@@ -287,6 +288,27 @@
       <div id="reservesMsg"></div>
     </div>
 
+
+    <!-- 14. NEWS -->
+    <div class="adm-section" id="tab-news">
+      <h3>News & Announcements</h3>
+      <div class="sub">Paste in RBM's headline, a short summary, and the link — shows up on the public News page instantly.</div>
+      <table class="adm-table">
+        <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
+        <tbody id="newsBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Date</label><input id="nDate" placeholder="2026-08-21"></div>
+        <div class="adm-field"><label>Title</label><input id="nTitle" placeholder="RBM announces..."></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Summary</label><input id="nSummary" placeholder="Short summary of the announcement"></div>
+        <div class="adm-field"><label>Link (optional)</label><input id="nLink" placeholder="https://www.rbm.mw/..."></div>
+      </div>
+      <button class="adm-btn" onclick="saveNews()">Add Announcement</button>
+      <div id="newsMsg"></div>
+    </div>
+
   </div>
 </div>
 
@@ -305,7 +327,7 @@
       document.getElementById('loginBox').style.display = 'none';
       document.getElementById('panel').style.display = 'block';
       loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
-      loadFx(); loadTbills(); loadOmo(); loadReserves();
+      loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews();
     } else {
       document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
     }
@@ -653,6 +675,31 @@
   async function deleteReserves(month) {
     await fetch('/api/admin/reserves/' + month, { method: 'DELETE', headers: authHeaders() });
     loadReserves();
+  }
+
+
+  // ---- News ----
+  async function loadNews() {
+    const rows = await fetch('/api/news').then(r => r.json());
+    const body = document.getElementById('newsBody');
+    body.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.date}</td><td>${r.title}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteNews(${i})">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveNews() {
+    const body = { date: document.getElementById('nDate').value, title: document.getElementById('nTitle').value,
+      summary: document.getElementById('nSummary').value, link: document.getElementById('nLink').value };
+    const res = await fetch('/api/admin/news', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('newsMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadNews();
+  }
+  async function deleteNews(i) {
+    await fetch('/api/admin/news/' + i, { method: 'DELETE', headers: authHeaders() });
+    loadNews();
   }
 </script>
 </body>
