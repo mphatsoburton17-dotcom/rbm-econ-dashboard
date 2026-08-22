@@ -145,3 +145,11 @@ html, body { overflow-x: hidden; max-width: 100%; }
 
 /* ---- Yearly report ---- */
 .year-bar-row { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding: 10px 0; }
+
+/* Pin the hamburger menu to the top-right corner of the header, not the button row */
+.nav-more {
+  position: absolute !important;
+  top: 22px !important;
+  right: 22px !important;
+  z-index: 50 !important;
+}
