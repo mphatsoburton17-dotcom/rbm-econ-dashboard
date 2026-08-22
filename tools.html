@@ -97,6 +97,7 @@
     <button class="tool-tab" data-tool="loan" onclick="switchTool('loan', this)">Loan Cost</button>
     <button class="tool-tab" data-tool="reserves" onclick="switchTool('reserves', this)">Reserves Cover</button>
     <button class="tool-tab" data-tool="tbills" onclick="switchTool('tbills', this)">Treasury Bills</button>
+    <button class="tool-tab" data-tool="mpc" onclick="switchTool('mpc', this)">MPC Tracker</button>
   </div>
 
   <div class="tool-panel active" id="panel-fx">
@@ -197,6 +198,16 @@
       <h3>Which tenor pays more?</h3>
       <div class="desc">Latest published RBM Treasury Bill auction yields, by tenor.</div>
       <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Auction Date</th></tr></thead><tbody id="tbillCompareTable"></tbody></table>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-mpc">
+    <div class="section-title"><span>MPC Meeting Tracker</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>How has RBM's policy rate moved, and why?</h3>
+      <div class="desc">A timeline of past Monetary Policy Committee decisions, so you can see the pattern behind the current rate — not just the number itself.</div>
+      <div id="mpcNextHeadline" style="font-family:'Fraunces'; font-size:18px; font-weight:800; color:#8F6620; margin:14px 0 16px;"></div>
+      <div id="mpcTimeline"></div>
     </div>
   </div>
 
@@ -316,6 +327,37 @@
     } catch (e) {
       document.getElementById('reservesCoverHeadline').textContent = 'Unavailable';
     }
+
+    try {
+      const next = await fetch('/api/mpc-next').then(r => r.json());
+      if (next && next.nextMeetingDate) {
+        document.getElementById('mpcNextHeadline').textContent = 'Next scheduled MPC meeting: ' + next.nextMeetingDate;
+      } else {
+        document.getElementById('mpcNextHeadline').textContent = '';
+      }
+    } catch (e) {}
+
+    try {
+      const mpc = await fetch('/api/mpc').then(r => r.json());
+      const box = document.getElementById('mpcTimeline');
+      box.innerHTML = '';
+      if (Array.isArray(mpc) && mpc.length) {
+        mpc.slice().reverse().forEach(r => {
+          const changeLabel = r.changeBps ? `${r.decision === 'Cut' ? '−' : '+'}${r.changeBps}bps` : '';
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:14px 0; border-bottom:1px solid #ECE4D2;';
+          row.innerHTML = `
+            <div style="font-weight:700; color:#4a3c1f;">${r.date} — ${r.decision}${changeLabel ? ' (' + changeLabel + ')' : ''}</div>
+            <div style="font-size:13.5px; color:#6b5f45; margin-top:4px;">${r.reason}</div>
+            <div style="font-size:11px; color:#9a8f74; margin-top:4px;">Source: ${r.source}${r.link ? ` — <a href="${r.link}" target="_blank">link</a>` : ''}</div>`;
+          box.appendChild(row);
+        });
+      } else {
+        box.innerHTML = '<div style="color:#9a8f74; font-size:13px;">No meetings entered yet.</div>';
+      }
+    } catch (e) {
+      document.getElementById('mpcTimeline').innerHTML = '<div style="color:#9a8f74; font-size:13px;">Unable to load meeting data.</div>';
+    }
   }
 
   function toMwk(amount, currency) {
@@ -401,3 +443,4 @@
 </script>
 </body>
 </html>
+
