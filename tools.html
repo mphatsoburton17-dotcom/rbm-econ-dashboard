@@ -3,788 +3,532 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Malawi Economic Indicators</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Financial Tools — Malawi Economic Indicators</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="style.css">
 <style>
-  .adm-wrap { max-width: 900px; margin: 0 auto; padding: 20px 14px 60px; }
-  .adm-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
-  .adm-tab { padding: 8px 14px; border-radius: 20px; border: 1px solid #ECE4D2; background: #fff; font-size: 12px; font-weight: 700; color: #8F6620; cursor: pointer; }
-  .adm-tab.active { background: #8F6620; color: #fff; }
-  .adm-section { display: none; background: #fff; border: 1px solid #ECE4D2; border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; }
-  .adm-section.active { display: block; }
-  .adm-section h3 { font-family: 'Fraunces'; margin-bottom: 6px; color: #8F6620; }
-  .adm-section .sub { font-size: 12px; color: #9a8f74; margin-bottom: 16px; }
-  .adm-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-  .adm-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
-  .adm-field label { font-size: 10.5px; font-weight: 700; color: #7a6f52; text-transform: uppercase; }
-  .adm-field input, .adm-field textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid #ECE4D2; font-size: 13px; font-family: 'Inter'; }
-  .adm-btn { padding: 10px 18px; border-radius: 8px; border: none; background: #8F6620; color: #fff; font-weight: 700; cursor: pointer; font-size: 13px; }
-  .adm-btn.danger { background: #C43D3D; }
-  .adm-btn.secondary { background: #B8862B; }
-  .adm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
-  .adm-table th, .adm-table td { text-align: left; padding: 8px; border-bottom: 1px solid #ECE4D2; }
-  .adm-table th { color: #7a6f52; font-size: 10.5px; text-transform: uppercase; }
-  .adm-msg { font-size: 12.5px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; }
-  .adm-msg.ok { background: #E6F4EA; color: #2E8B45; }
-  .adm-msg.err { background: #FBE9E9; color: #C43D3D; }
-  .adm-stat { display: inline-block; background: #FAF6EC; border-radius: 10px; padding: 14px 18px; margin-right: 10px; margin-bottom: 10px; }
-  .adm-stat .n { font-family: 'Fraunces'; font-size: 24px; font-weight: 800; color: #8F6620; }
-  .adm-stat .l { font-size: 11px; color: #7a6f52; text-transform: uppercase; }
+  .nav-more { position: relative; display: inline-block; }
+  .nav-more-btn {
+    font: inherit; cursor: pointer; border-radius: 999px;
+    padding: 10px 16px; border: 1px solid rgba(0,0,0,0.12);
+    background: transparent; color: inherit; font-weight: 700;
+    letter-spacing: 0.04em; line-height: 1;
+  }
+  .nav-more-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 12px 28px rgba(43,32,10,0.18);
+    min-width: 168px; padding: 6px; z-index: 40;
+  }
+  .nav-more-panel.open { display: block; }
+  .nav-more-panel a {
+    display: block; padding: 10px 12px; border-radius: 8px;
+    color: #4a3c1f; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-more-panel a:hover { background: #F1EAD8; }
+
+  .tool-note { font-size: 13px; color: #8a7f63; margin-top: 10px; line-height: 1.5; }
+  .swap-btn {
+    border: 1px solid rgba(0,0,0,0.12); background: #fff; border-radius: 999px;
+    width: 38px; height: 38px; cursor: pointer; font-size: 16px; line-height: 1;
+    align-self: flex-end; margin-bottom: 4px;
+  }
+  .disclaimer-box {
+    margin-top: 28px; padding: 16px 18px; border-radius: 12px;
+    background: #F1EAD8; color: #6b5f45; font-size: 13px; line-height: 1.6;
+  }
+  .verdict { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 700; }
+  .verdict.good { background: #E6F4EA; color: #2E8B45; }
+  .verdict.bad { background: #FBE9E9; color: #C43D3D; }
+  select.tool-select { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15); font-family:'Inter'; font-size:14px; }
+
+  /* ---- Horizontal tool tabs ---- */
+  .tool-tabs {
+    display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 4px 2px 12px; margin: 18px 0 4px; scrollbar-width: none;
+  }
+  .tool-tabs::-webkit-scrollbar { display: none; }
+  .tool-tab {
+    flex: 0 0 auto; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border);
+    background: #fff; color: #6b5c33; font-weight: 700; font-size: 13px; cursor: pointer;
+    white-space: nowrap; font-family: 'Inter';
+  }
+  .tool-tab.active { background: var(--gold-deep); border-color: var(--gold-deep); color: #fff; }
+  .tool-panel { display: none; }
+  .tool-panel.active { display: block; }
 </style>
 </head>
 <body>
-<div class="wrap adm-wrap">
+<div class="wrap">
 
-  <!-- LOGIN -->
-  <div class="admin-box" id="loginBox">
-    <h3>Admin Login</h3>
-    <label>Password</label>
-    <input type="password" id="loginPassword" placeholder="Enter admin password">
-    <button onclick="login()">Log in</button>
-    <div id="loginMsg"></div>
+  <div class="banner">
+    <b>Independent prototype</b> — built from the Reserve Bank of Malawi's own published releases. Not affiliated with or endorsed by RBM. Every figure below is a real, sourced value — see the <a href="sources.html">Sources page</a>.
   </div>
 
-  <!-- ADMIN PANEL -->
-  <div id="panel" style="display:none;">
-
-    <h2 style="font-family:'Fraunces'; margin-bottom:14px;">Admin Panel</h2>
-
-    <div class="adm-tabs">
-      <button class="adm-tab active" onclick="showTab('overview', this)">Overview</button>
-      <button class="adm-tab" onclick="showTab('monthly', this)">Monthly Entry</button>
-      <button class="adm-tab" onclick="showTab('history', this)">History</button>
-      <button class="adm-tab" onclick="showTab('other', this)">Other Indicators</button>
-      <button class="adm-tab" onclick="showTab('yearly', this)">Yearly Averages</button>
-      <button class="adm-tab" onclick="showTab('explainer', this)">Explainer Text</button>
-      <button class="adm-tab" onclick="showTab('faq', this)">FAQ Inbox</button>
-      <button class="adm-tab" onclick="showTab('contact', this)">Contact & Settings</button>
-      <button class="adm-tab" onclick="showTab('bulk', this)">Import / Export</button>
-      <button class="adm-tab" onclick="showTab('news', this)">News</button>
-      <button class="adm-tab" onclick="showTab('fx', this)">Exchange Rate</button>
-      <button class="adm-tab" onclick="showTab('tbills', this)">T-Bill Yields</button>
-      <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
-      <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
-      <button class="adm-tab" onclick="showTab('mpc', this)">MPC Meetings</button>
-    </div>
-
-    <!-- 1. OVERVIEW -->
-    <div class="adm-section active" id="tab-overview">
-      <h3>Overview</h3>
-      <div class="sub">Quick status of the dashboard's data.</div>
-      <div id="overviewStats"></div>
-      <div id="overviewWarning"></div>
-    </div>
-
-    <!-- 2. MONTHLY ENTRY -->
-    <div class="adm-section" id="tab-monthly">
-      <h3>Add / Update This Month's Data</h3>
-      <div class="sub">Once a month, enter the new RBM/NSO release here.</div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Month (e.g. 2026-08)</label><input id="fMonth" placeholder="2026-08"></div>
-        <div class="adm-field"><label>Label (e.g. Aug 2026)</label><input id="fLabel" placeholder="Aug 2026"></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Headline Inflation (%)</label><input type="number" step="0.1" id="fHeadline"></div>
-        <div class="adm-field"><label>Food Inflation (%)</label><input type="number" step="0.1" id="fFood"></div>
-        <div class="adm-field"><label>Non-Food Inflation (%)</label><input type="number" step="0.1" id="fNonFood"></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Source</label><input id="fSource" placeholder="RBM/NSO CPI Release, Aug 2026"></div>
-      </div>
-      <button class="adm-btn" onclick="saveEntry()">Save this month's entry</button>
-      <div id="entryMsg"></div>
-    </div>
-
-    <!-- 3. HISTORY -->
-    <div class="adm-section" id="tab-history">
-      <h3>Entry History</h3>
-      <div class="sub">All saved months. Edit loads it into the Monthly Entry tab; Delete removes it.</div>
-      <table class="adm-table">
-        <thead><tr><th>Month</th><th>Headline</th><th>Food</th><th>Non-Food</th><th></th></tr></thead>
-        <tbody id="historyBody"></tbody>
-      </table>
-    </div>
-
-    <!-- 4. OTHER INDICATORS -->
-    <div class="adm-section" id="tab-other">
-      <h3>Other Indicators</h3>
-      <div class="sub">These feed the "Monetary Policy Rates" and "Urban vs Rural" panels on the public site.</div>
-
-      <h4 style="margin:14px 0 8px; font-size:13px; color:#7a6f52;">Policy Rates</h4>
-      <div class="adm-row">
-        <div class="adm-field"><label>Policy Rate (%)</label><input type="number" step="0.1" id="pRate"></div>
-        <div class="adm-field"><label>Lombard Rate (%)</label><input type="number" step="0.1" id="pLombard"></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Liquidity Reserve — Local (%)</label><input type="number" step="0.1" id="pLocal"></div>
-        <div class="adm-field"><label>Liquidity Reserve — Foreign (%)</label><input type="number" step="0.1" id="pForeign"></div>
-        <div class="adm-field"><label>Money Supply Growth (%)</label><input type="number" step="0.1" id="pMoney"></div>
-      </div>
-      <button class="adm-btn" onclick="savePolicyRates()">Save Policy Rates</button>
-      <div id="policyMsg"></div>
-
-      <h4 style="margin:20px 0 8px; font-size:13px; color:#7a6f52;">Urban vs Rural</h4>
-      <div class="adm-row">
-        <div class="adm-field"><label>Urban — Monthly (%)</label><input type="number" step="0.1" id="uMonthly"></div>
-        <div class="adm-field"><label>Urban — Food (%)</label><input type="number" step="0.1" id="uFood"></div>
-        <div class="adm-field"><label>Urban — Non-Food (%)</label><input type="number" step="0.1" id="uNonFood"></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Rural — Monthly (%)</label><input type="number" step="0.1" id="rMonthly"></div>
-        <div class="adm-field"><label>Rural — Food (%)</label><input type="number" step="0.1" id="rFood"></div>
-        <div class="adm-field"><label>Rural — Non-Food (%)</label><input type="number" step="0.1" id="rNonFood"></div>
-      </div>
-      <button class="adm-btn" onclick="saveUrbanRural()">Save Urban/Rural</button>
-      <div id="urMsg"></div>
-
-      <h4 style="margin:20px 0 8px; font-size:13px; color:#7a6f52;">Growth Outlook</h4>
-      <div class="adm-row">
-        <div class="adm-field"><label>2026 Growth Projection (%)</label><input type="number" step="0.1" id="gProjection"></div>
-        <div class="adm-field"><label>Previous Projection (%)</label><input type="number" step="0.1" id="gPrevious"></div>
-      </div>
-      <button class="adm-btn" onclick="saveGrowth()">Save Growth Outlook</button>
-      <div id="growthMsg"></div>
-    </div>
-
-    <!-- 5. YEARLY AVERAGES -->
-    <div class="adm-section" id="tab-yearly">
-      <h3>Yearly Averages</h3>
-      <div class="sub">Feeds the Multi-Year chart. One row per year.</div>
-      <table class="adm-table">
-        <thead><tr><th>Year</th><th>Average (%)</th><th>Source</th><th></th></tr></thead>
-        <tbody id="yearlyBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Year</label><input id="yYear" placeholder="2027"></div>
-        <div class="adm-field"><label>Average (%)</label><input type="number" step="0.1" id="yAvg"></div>
-        <div class="adm-field"><label>Source</label><input id="ySource" placeholder="World Bank / IMF"></div>
-      </div>
-      <button class="adm-btn" onclick="addYearlyRow()">Add Year</button>
-      <button class="adm-btn secondary" onclick="saveYearly()">Save All Yearly Averages</button>
-      <div id="yearlyMsg"></div>
-    </div>
-
-    <!-- 6. EXPLAINER -->
-    <div class="adm-section" id="tab-explainer">
-      <h3>"What This Means" Text</h3>
-      <div class="sub">Shown under the Urban vs Rural chart on the public dashboard.</div>
-      <textarea id="explainerBox" rows="6" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:'Inter'; font-size:13px;"></textarea>
-      <div style="margin-top:10px;"><button class="adm-btn" onclick="saveExplainer()">Save Text</button></div>
-      <div id="explainerMsg"></div>
-    </div>
-
-    <!-- 7. FAQ INBOX -->
-    <div class="adm-section" id="tab-faq">
-      <h3>FAQ / Questions Inbox</h3>
-      <div class="sub">Questions visitors typed into the chat widget.</div>
-      <table class="adm-table">
-        <thead><tr><th>When</th><th>Question</th><th></th></tr></thead>
-        <tbody id="faqBody"></tbody>
-      </table>
-    </div>
-
-    <!-- 8. CONTACT & SETTINGS -->
-    <div class="adm-section" id="tab-contact">
-      <h3>Contact & Settings</h3>
-      <div class="sub">Shown in the footer across the whole site.</div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Email</label><input id="cEmail"></div>
-        <div class="adm-field"><label>Phone / Toll-free</label><input id="cPhone"></div>
-        <div class="adm-field"><label>Website</label><input id="cWebsite"></div>
-      </div>
-      <button class="adm-btn" onclick="saveContact()">Save Contact Info</button>
-      <div id="contactMsg"></div>
-    </div>
-
-    <!-- 9. BULK IMPORT/EXPORT -->
-    <div class="adm-section" id="tab-bulk">
-      <h3>Bulk Import / Export</h3>
-      <div class="sub">Paste CSV rows (month,label,headline,food,nonFood,source) to import many months at once, or download everything as CSV.</div>
-      <textarea id="bulkBox" rows="6" placeholder="2026-08,Aug 2026,20.1,13.8,31.9,RBM/NSO CPI Release" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
-      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="adm-btn" onclick="bulkImport()">Import Rows</button>
-        <button class="adm-btn secondary" onclick="exportCsv()">Export All as CSV</button>
-      </div>
-      <div id="bulkMsg"></div>
-    </div>
-
-
-    <!-- 10. EXCHANGE RATE -->
-    <div class="adm-section" id="tab-fx">
-      <h3>Exchange Rate</h3>
-      <div class="sub">USD/GBP/ZAR to MWK. Use "Fetch Latest Now" for a live pull, or enter manually below.</div>
-      <button class="adm-btn secondary" onclick="fetchLatestFx()">Fetch Latest Now (live)</button>
-      <div id="fxFetchMsg"></div>
-      <table class="adm-table">
-        <thead><tr><th>Date</th><th>USD</th><th>GBP</th><th>ZAR</th><th></th></tr></thead>
-        <tbody id="fxBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Date</label><input id="fxDate" placeholder="2026-08-20"></div>
-        <div class="adm-field"><label>USD/MWK</label><input type="number" step="0.01" id="fxUsd"></div>
-        <div class="adm-field"><label>GBP/MWK</label><input type="number" step="0.01" id="fxGbp"></div>
-        <div class="adm-field"><label>ZAR/MWK</label><input type="number" step="0.01" id="fxZar"></div>
-        <div class="adm-field"><label>Source</label><input id="fxSource" placeholder="Manual entry"></div>
-      </div>
-      <button class="adm-btn" onclick="saveFx()">Save Entry</button>
-      <div id="fxMsg"></div>
-    </div>
-
-    <!-- 11. T-BILLS -->
-    <div class="adm-section" id="tab-tbills">
-      <h3>Treasury Bill / Bond Yields</h3>
-      <table class="adm-table">
-        <thead><tr><th>Date</th><th>Tenor</th><th>Yield</th><th></th></tr></thead>
-        <tbody id="tbillBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Auction Date</label><input id="tbDate" placeholder="2026-08-01"></div>
-        <div class="adm-field"><label>Tenor</label>
-          <select id="tbTenor" style="padding:8px 10px;border-radius:8px;border:1px solid #ECE4D2;">
-            <option>91-day</option><option>182-day</option><option>364-day</option>
-          </select>
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title">Financial Tools</div>
+          <div class="hero-sub">Everyday calculators built on RBM's own published rates.</div>
         </div>
-        <div class="adm-field"><label>Yield (%)</label><input type="number" step="0.01" id="tbYield"></div>
-        <div class="adm-field"><label>Source</label><input id="tbSource" placeholder="RBM Treasury Bill Auction"></div>
       </div>
-      <button class="adm-btn" onclick="saveTbill()">Add Entry</button>
-      <div id="tbillMsg"></div>
+      <div class="hero-nav">
+        <a class="navbtn" href="index.html">Dashboard</a>
+        <a class="navbtn active" href="tools.html">Tools</a>
+      </div>
     </div>
-
-    <!-- 12. OMO -->
-    <div class="adm-section" id="tab-omo">
-      <h3>Open Market Operations / Liquidity</h3>
-      <table class="adm-table">
-        <thead><tr><th>Date</th><th>Action</th><th>Amount</th><th></th></tr></thead>
-        <tbody id="omoBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Date</label><input id="omoDate" placeholder="2026-08-20"></div>
-        <div class="adm-field"><label>Action</label>
-          <select id="omoAction" style="padding:8px 10px;border-radius:8px;border:1px solid #ECE4D2;">
-            <option>Injecting liquidity</option><option>Withdrawing liquidity</option><option>No major operation</option>
-          </select>
-        </div>
-        <div class="adm-field"><label>Amount (MWK, optional)</label><input type="number" id="omoAmount"></div>
-        <div class="adm-field"><label>Source</label><input id="omoSource" placeholder="RBM OMO Statement"></div>
+    <div class="nav-more">
+      <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
+      <div class="nav-more-panel" id="navMorePanel">
+        <a href="learn.html">Learn</a>
+        <a href="news.html">News</a>
+        <a href="about.html">About</a>
+        <a href="sources.html">Sources</a>
       </div>
-      <button class="adm-btn" onclick="saveOmo()">Add Entry</button>
-      <div id="omoMsg"></div>
     </div>
-
-    <!-- 13. FOREIGN RESERVES -->
-    <div class="adm-section" id="tab-reserves">
-      <h3>Foreign Reserves</h3>
-      <table class="adm-table">
-        <thead><tr><th>Month</th><th>Amount (USD)</th><th></th></tr></thead>
-        <tbody id="reservesBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Month</label><input id="resMonth" placeholder="2026-08"></div>
-        <div class="adm-field"><label>Reserves Amount (USD)</label><input type="number" id="resAmount" placeholder="480000000"></div>
-        <div class="adm-field"><label>Source</label><input id="resSource" placeholder="RBM Reserves Report"></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Monthly Import Bill (USD)</label><input type="number" id="resImportBill" placeholder="300000000"></div>
-        <div class="adm-field"><label>Import Bill Source</label><input id="resImportSource" placeholder="CEIC/NSO — recent monthly average"></div>
-      </div>
-      <button class="adm-btn" onclick="saveReserves()">Save Entry</button>
-      <div id="reservesMsg"></div>
-    </div>
-
-
-    <!-- 14. NEWS -->
-    <div class="adm-section" id="tab-news">
-      <h3>News & Announcements</h3>
-      <div class="sub">Paste in RBM's headline, a short summary, and the link — shows up on the public News page instantly.</div>
-      <table class="adm-table">
-        <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
-        <tbody id="newsBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Date</label><input id="nDate" placeholder="2026-08-21"></div>
-        <div class="adm-field"><label>Title</label><input id="nTitle" placeholder="RBM announces..."></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Summary</label><input id="nSummary" placeholder="Short summary of the announcement"></div>
-        <div class="adm-field"><label>Link (optional)</label><input id="nLink" placeholder="https://www.rbm.mw/..."></div>
-      </div>
-      <button class="adm-btn" onclick="saveNews()">Add Announcement</button>
-      <div id="newsMsg"></div>
-    </div>
-
-    <!-- 15. MPC MEETINGS -->
-    <div class="adm-section" id="tab-mpc">
-      <h3>MPC Meeting Tracker</h3>
-      <div class="sub">Each row is one Monetary Policy Committee meeting. "Reason" should be a short paraphrase of RBM's own statement — not a direct quote.</div>
-
-      <h4 style="margin:0 0 8px; font-size:13px; color:#7a6f52;">Next Scheduled Meeting</h4>
-      <div class="adm-row">
-        <div class="adm-field"><label>Next Meeting Date</label><input id="mpcNextDate" placeholder="2026-10-15"></div>
-      </div>
-      <button class="adm-btn" onclick="saveMpcNext()">Save Next Meeting Date</button>
-      <div id="mpcNextMsg"></div>
-
-      <h4 style="margin:20px 0 8px; font-size:13px; color:#7a6f52;">Past Meetings</h4>
-      <table class="adm-table">
-        <thead><tr><th>Date</th><th>Decision</th><th>Change</th><th>Reason</th><th></th></tr></thead>
-        <tbody id="mpcBody"></tbody>
-      </table>
-      <div class="adm-row" style="margin-top:12px;">
-        <div class="adm-field"><label>Meeting Date</label><input id="mpcDate" placeholder="2026-08-15"></div>
-        <div class="adm-field"><label>Decision</label>
-          <select id="mpcDecision" style="padding:8px 10px;border-radius:8px;border:1px solid #ECE4D2;">
-            <option>Held</option><option>Raised</option><option>Cut</option>
-          </select>
-        </div>
-        <div class="adm-field"><label>Change (bps, if any)</label><input type="number" id="mpcChangeBps" placeholder="50"></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Reason (one sentence, paraphrased)</label><input id="mpcReason" placeholder="RBM cited persistent food inflation pressure."></div>
-      </div>
-      <div class="adm-row">
-        <div class="adm-field"><label>Source</label><input id="mpcSource" placeholder="RBM MPC Statement, Aug 2026"></div>
-        <div class="adm-field"><label>Link (optional)</label><input id="mpcLink" placeholder="https://www.rbm.mw/..."></div>
-      </div>
-      <button class="adm-btn" onclick="saveMpc()">Add Meeting</button>
-      <div id="mpcMsg"></div>
-    </div>
-
   </div>
+
+  <div class="tool-tabs" id="toolTabs">
+    <button class="tool-tab active" data-tool="fx" onclick="switchTool('fx', this)">Currency Converter</button>
+    <button class="tool-tab" data-tool="inflation" onclick="switchTool('inflation', this)">Inflation Impact</button>
+    <button class="tool-tab" data-tool="savings" onclick="switchTool('savings', this)">Savings vs Inflation</button>
+    <button class="tool-tab" data-tool="loan" onclick="switchTool('loan', this)">Loan Cost</button>
+    <button class="tool-tab" data-tool="passthrough" onclick="switchTool('passthrough', this)">Import Pass-Through</button>
+    <button class="tool-tab" data-tool="reserves" onclick="switchTool('reserves', this)">Reserves Cover</button>
+    <button class="tool-tab" data-tool="tbills" onclick="switchTool('tbills', this)">Treasury Bills</button>
+    <button class="tool-tab" data-tool="mpc" onclick="switchTool('mpc', this)">MPC Tracker</button>
+  </div>
+
+  <div class="tool-panel active" id="panel-fx">
+    <div class="section-title"><span>Currency Converter</span> <span class="tag" id="fxAsOf">Loading rate…</span></div>
+    <div class="calc">
+      <h3>Convert MWK ↔ USD / GBP / ZAR</h3>
+      <div class="desc">Uses the most recently published exchange rate.</div>
+      <div class="calc-row" style="align-items:flex-end;">
+        <div class="calc-field">
+          <label>Amount</label>
+          <input type="number" id="fxAmount" value="100000">
+        </div>
+        <div class="calc-field">
+          <label>From</label>
+          <select id="fxFrom" class="tool-select">
+            <option value="MWK">MWK</option>
+            <option value="USD">USD</option>
+            <option value="GBP">GBP</option>
+            <option value="ZAR">ZAR</option>
+          </select>
+        </div>
+        <button class="swap-btn" onclick="swapFx()" title="Swap">⇄</button>
+        <div class="calc-field">
+          <label>To</label>
+          <select id="fxTo" class="tool-select">
+            <option value="USD">USD</option>
+            <option value="MWK">MWK</option>
+            <option value="GBP">GBP</option>
+            <option value="ZAR">ZAR</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="runConvert()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Convert</button>
+      <div class="calc-result" id="fxResult">Enter an amount and press Convert.</div>
+      <div class="tool-note">This is the interbank rate. Street/forex bureau rates may differ.</div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-inflation">
+    <div class="section-title"><span>Inflation Impact Calculator</span> <span class="tag">Tool</span></div>
+    <div class="calc">
+      <h3>What will your money be worth?</h3>
+      <div class="desc">See how current inflation affects the real value of money over time.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
+        <div class="calc-field"><label>Over how many years</label><input type="number" id="calcYears" value="1"></div>
+        <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
+      </div>
+      <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+      <div class="tool-note">A future update will show this as a real-world comparison (e.g. "X fewer bags of maize") once staple-price data from NSO's consumer basket is available.</div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-savings">
+    <div class="section-title"><span>Savings vs. Inflation Checker</span> <span class="tag">Tool</span></div>
+    <div class="calc">
+      <h3>Is your savings interest beating inflation?</h3>
+      <div class="desc">Compares the interest rate your savings earn against the current inflation rate, in real MWK terms.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>Amount saved (MWK)</label><input type="number" id="savAmount" value="50000"></div>
+        <div class="calc-field"><label>Your savings interest rate (% per year)</label><input type="number" step="0.1" id="savRate" value="8"></div>
+        <button onclick="runSavingsCheck()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Check</button>
+      </div>
+      <div class="calc-result" id="savResult">Enter an amount and your savings rate, then press Check.</div>
+      <div id="savVerdict"></div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-loan">
+    <div class="section-title"><span>Loan Cost Estimator</span> <span class="tag">Tool</span></div>
+    <div class="calc">
+      <h3>Roughly what would a loan cost?</h3>
+      <div class="desc">Based on RBM's current Policy Rate only — your bank will add its own margin on top, so treat this as a starting point, not a quote.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>Loan amount (MWK)</label><input type="number" id="loanAmount" value="1000000"></div>
+        <div class="calc-field"><label>Term (years)</label><input type="number" id="loanYears" value="1"></div>
+        <button onclick="runLoanEstimate()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Estimate</button>
+      </div>
+      <div class="calc-result" id="loanResult">Enter a loan amount and term and press Estimate.</div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-passthrough">
+    <div class="section-title"><span>Import Price Pass-Through</span> <span class="tag">Estimate</span></div>
+    <div class="calc">
+      <h3>How much of a price rise could be the exchange rate?</h3>
+      <div class="desc">If you import goods or inputs, this shows how much of a price change since you last paid could plausibly be explained by MWK depreciation against the USD, using this site's exchange rate data. It is an illustration of the FX effect only — not a forecast, and not the same as your actual cost.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>What you paid then (MWK)</label><input type="number" id="ptPriceThen" value="500000"></div>
+        <div class="calc-field"><label>How many months ago</label><input type="number" id="ptMonthsAgo" value="6"></div>
+      </div>
+      <div class="calc-row" style="margin-top:10px;">
+        <div class="calc-field"><label>What you'd pay for it now (optional, MWK)</label><input type="number" id="ptPriceNow" placeholder="Leave blank if unsure"></div>
+      </div>
+      <button onclick="runPassThrough()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Estimate</button>
+      <div class="calc-result" id="ptResult">Enter what you paid and how long ago, then press Estimate.</div>
+      <div class="tool-note">This tool only isolates the currency effect. Actual import prices are also driven by supplier costs, customs duties, shipping, and local demand — this estimate does not account for those.</div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-reserves">
+    <div class="section-title"><span>Reserves Cover Calculator</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>How many months of imports could Malawi's reserves cover?</h3>
+      <div class="desc">This shows how many months Malawi could keep paying for imports using only its foreign currency reserves, if no new foreign currency came in. Economists often treat 3 months as a rough safety threshold — below that is generally considered risky.</div>
+      <div id="reservesCoverHeadline" style="font-family:'Fraunces'; font-size:32px; font-weight:900; color:#8F6620; margin:14px 0 6px;">Loading…</div>
+      <div id="reservesCoverDetail" style="font-size:12.5px; color:#9a8f74; margin-bottom:16px;"></div>
+      <div class="chart-box small"><canvas id="reservesCoverChart"></canvas></div>
+      <div class="tool-note" id="reservesCoverSources"></div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-tbills">
+    <div class="section-title"><span>Treasury Bill Comparison</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>Which tenor pays more?</h3>
+      <div class="desc">Latest published RBM Treasury Bill auction yields, by tenor.</div>
+      <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Auction Date</th></tr></thead><tbody id="tbillCompareTable"></tbody></table>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-mpc">
+    <div class="section-title"><span>MPC Meeting Tracker</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>How has RBM's policy rate moved, and why?</h3>
+      <div class="desc">A timeline of past Monetary Policy Committee decisions, so you can see the pattern behind the current rate — not just the number itself.</div>
+      <div id="mpcNextHeadline" style="font-family:'Fraunces'; font-size:18px; font-weight:800; color:#8F6620; margin:14px 0 16px;"></div>
+      <div id="mpcTimeline"></div>
+    </div>
+  </div>
+
+  <div class="disclaimer-box">
+    These tools use RBM's own published rates but are independent estimates, not financial advice. Loan cost figures are based on the current Policy Rate only — actual bank loans include their own added margin. Always confirm figures with your bank or a licensed advisor before making a financial decision.
+  </div>
+
+  <div class="footer">
+    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. Figures may be revised by RBM after first publication.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
+
 </div>
 
 <script>
-  let adminPassword = '';
+  function toggleNavMore(btn) {
+    const panel = document.getElementById('navMorePanel');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.nav-more');
+    const panel = document.getElementById('navMorePanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
+  });
 
-  async function login() {
-    const password = document.getElementById('loginPassword').value;
-    const res = await fetch('/api/admin/login', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      adminPassword = password;
-      document.getElementById('loginBox').style.display = 'none';
-      document.getElementById('panel').style.display = 'block';
-      loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
-      loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews(); loadMpc();
-    } else {
-      document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
+  function switchTool(id, btn) {
+    document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
+  let CURRENT_HEADLINE_RATE = 0.208;
+  let CURRENT_POLICY_RATE = 0.24;
+  let FX_RATES = null;
+  let FX_RATE_DATE = null;
+  let FX_HISTORY = [];
+
+  async function loadToolsData() {
+    try {
+      const summary = await fetch('/api/summary').then(r => r.json());
+      if (summary.latest && summary.latest.headline != null) {
+        CURRENT_HEADLINE_RATE = summary.latest.headline / 100;
+      }
+      if (summary.policyRates && summary.policyRates.policyRate != null) {
+        CURRENT_POLICY_RATE = summary.policyRates.policyRate / 100;
+      }
+    } catch (e) {}
+
+    try {
+      const rates = await fetch('/api/exchange-rates').then(r => r.json());
+      if (Array.isArray(rates) && rates.length) {
+        FX_HISTORY = rates;
+        const latest = rates[rates.length - 1];
+        FX_RATES = { usd: latest.usd, gbp: latest.gbp, zar: latest.zar };
+        FX_RATE_DATE = latest.date;
+        document.getElementById('fxAsOf').textContent = 'As of ' + latest.date;
+      } else {
+        document.getElementById('fxAsOf').textContent = 'No rate published yet';
+      }
+    } catch (e) {
+      document.getElementById('fxAsOf').textContent = 'Rate unavailable';
+    }
+
+    try {
+      const tbills = await fetch('/api/tbills').then(r => r.json());
+      const body = document.getElementById('tbillCompareTable');
+      body.innerHTML = '';
+      tbills.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.tenor}</td><td class="num">${t.yield}%</td><td style="font-size:11px;color:#9a8f74;">${t.date}</td>`;
+        body.appendChild(tr);
+      });
+    } catch (e) {}
+
+    try {
+      const reserves = await fetch('/api/reserves').then(r => r.json());
+      if (Array.isArray(reserves) && reserves.length) {
+        const latest = reserves[reserves.length - 1];
+        const monthsCover = (latest.monthlyImportBillUSD && latest.monthlyImportBillUSD > 0)
+          ? latest.amountUSD / latest.monthlyImportBillUSD
+          : null;
+
+        if (monthsCover !== null) {
+          document.getElementById('reservesCoverHeadline').textContent = monthsCover.toFixed(1) + ' months of import cover';
+          document.getElementById('reservesCoverDetail').textContent =
+            `Reserves: $${(latest.amountUSD / 1e6).toFixed(0)}M ÷ Monthly import bill: $${(latest.monthlyImportBillUSD / 1e6).toFixed(0)}M — as of ${latest.month}`;
+        } else {
+          document.getElementById('reservesCoverHeadline').textContent = 'Not yet available';
+          document.getElementById('reservesCoverDetail').textContent = 'Monthly import bill figure not yet entered for this month.';
+        }
+
+        document.getElementById('reservesCoverSources').textContent =
+          `Sources: ${latest.source || 'RBM'} (reserves); ${latest.importBillSource || 'CEIC/NSO'} (import bill)`;
+
+        const coverSeries = reserves
+          .filter(r => r.monthlyImportBillUSD && r.monthlyImportBillUSD > 0)
+          .map(r => ({ month: r.month, cover: r.amountUSD / r.monthlyImportBillUSD }));
+
+        if (coverSeries.length) {
+          new Chart(document.getElementById('reservesCoverChart'), {
+            type: 'line',
+            data: {
+              labels: coverSeries.map(r => r.month),
+              datasets: [{ label: 'Months of import cover', data: coverSeries.map(r => r.cover), borderColor: '#B8862B', backgroundColor: 'rgba(184,134,43,0.08)', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3 }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + ' mo' } }, x: { grid: { display: false } } }
+            }
+          });
+        }
+      } else {
+        document.getElementById('reservesCoverHeadline').textContent = 'No data yet';
+      }
+    } catch (e) {
+      document.getElementById('reservesCoverHeadline').textContent = 'Unavailable';
+    }
+
+    try {
+      const next = await fetch('/api/mpc-next').then(r => r.json());
+      if (next && next.nextMeetingDate) {
+        document.getElementById('mpcNextHeadline').textContent = 'Next scheduled MPC meeting: ' + next.nextMeetingDate;
+      } else {
+        document.getElementById('mpcNextHeadline').textContent = '';
+      }
+    } catch (e) {}
+
+    try {
+      const mpc = await fetch('/api/mpc').then(r => r.json());
+      const box = document.getElementById('mpcTimeline');
+      box.innerHTML = '';
+      if (Array.isArray(mpc) && mpc.length) {
+        mpc.slice().reverse().forEach(r => {
+          const changeLabel = r.changeBps ? `${r.decision === 'Cut' ? '−' : '+'}${r.changeBps}bps` : '';
+          const row = document.createElement('div');
+          row.style.cssText = 'padding:14px 0; border-bottom:1px solid #ECE4D2;';
+          row.innerHTML = `
+            <div style="font-weight:700; color:#4a3c1f;">${r.date} — ${r.decision}${changeLabel ? ' (' + changeLabel + ')' : ''}</div>
+            <div style="font-size:13.5px; color:#6b5f45; margin-top:4px;">${r.reason}</div>
+            <div style="font-size:11px; color:#9a8f74; margin-top:4px;">Source: ${r.source}${r.link ? ` — <a href="${r.link}" target="_blank">link</a>` : ''}</div>`;
+          box.appendChild(row);
+        });
+      } else {
+        box.innerHTML = '<div style="color:#9a8f74; font-size:13px;">No meetings entered yet.</div>';
+      }
+    } catch (e) {
+      document.getElementById('mpcTimeline').innerHTML = '<div style="color:#9a8f74; font-size:13px;">Unable to load meeting data.</div>';
     }
   }
 
-  function authHeaders() {
-    return { 'Content-Type': 'application/json', 'x-admin-password': adminPassword };
+  function toMwk(amount, currency) {
+    if (currency === 'MWK') return amount;
+    const rate = FX_RATES && FX_RATES[currency.toLowerCase()];
+    return rate ? amount * rate : null;
+  }
+  function fromMwk(amountMwk, currency) {
+    if (currency === 'MWK') return amountMwk;
+    const rate = FX_RATES && FX_RATES[currency.toLowerCase()];
+    return rate ? amountMwk / rate : null;
+  }
+  function swapFx() {
+    const from = document.getElementById('fxFrom');
+    const to = document.getElementById('fxTo');
+    const tmp = from.value; from.value = to.value; to.value = tmp;
+  }
+  function runConvert() {
+    const amt = parseFloat(document.getElementById('fxAmount').value) || 0;
+    const from = document.getElementById('fxFrom').value;
+    const to = document.getElementById('fxTo').value;
+    const resultEl = document.getElementById('fxResult');
+    if (!FX_RATES && (from !== 'MWK' || to !== 'MWK')) {
+      resultEl.textContent = 'No exchange rate has been published yet — check back once one is added.';
+      return;
+    }
+    const mwk = toMwk(amt, from);
+    if (mwk === null) { resultEl.textContent = 'That rate is not available yet.'; return; }
+    const result = fromMwk(mwk, to);
+    if (result === null) { resultEl.textContent = 'That rate is not available yet.'; return; }
+    const dateNote = FX_RATE_DATE ? ` <span style="font-size:11px;color:#9a8f74;">(rate as of ${FX_RATE_DATE})</span>` : '';
+    resultEl.innerHTML = `<b>${amt.toLocaleString()} ${from}</b> ≈ <b>${result.toLocaleString(undefined, {maximumFractionDigits: 2})} ${to}</b>${dateNote}`;
   }
 
-  function showTab(name, btn) {
-    document.querySelectorAll('.adm-section').forEach(s => s.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
+  function runCalc() {
+    const amt = parseFloat(document.getElementById('calcAmount').value) || 0;
+    const yrs = parseFloat(document.getElementById('calcYears').value) || 0;
+    const rate = CURRENT_HEADLINE_RATE || 0.208;
+    const futureValue = amt / Math.pow(1 + rate, yrs);
+    document.getElementById('calcResult').innerHTML =
+      `At today's ${(rate * 100).toFixed(1)}% annual inflation, <b>MWK ${amt.toLocaleString()}</b> today will have the buying power of roughly <b>MWK ${Math.round(futureValue).toLocaleString()}</b> in ${yrs} year${yrs == 1 ? '' : 's'}.`;
   }
 
-  // ---- Overview ----
-  async function loadOverview() {
-    const entries = await fetch('/api/entries').then(r => r.json());
-    const faq = await fetch('/api/admin/faq-log', { headers: authHeaders() }).then(r => r.json());
-    const now = new Date();
-    const currentMonthKey = now.toISOString().slice(0, 7);
-    const hasCurrent = entries.some(e => e.month === currentMonthKey);
-    document.getElementById('overviewStats').innerHTML = `
-      <div class="adm-stat"><div class="n">${entries.length}</div><div class="l">Months entered</div></div>
-      <div class="adm-stat"><div class="n">${faq.length}</div><div class="l">Questions asked</div></div>
-    `;
-    document.getElementById('overviewWarning').innerHTML = hasCurrent
-      ? '<div class="adm-msg ok">This month\'s data is entered.</div>'
-      : `<div class="adm-msg err">This month (${currentMonthKey}) is missing — add it in the Monthly Entry tab.</div>`;
+  function runSavingsCheck() {
+    const amount = parseFloat(document.getElementById('savAmount').value) || 0;
+    const savRate = parseFloat(document.getElementById('savRate').value) || 0;
+    const inflRate = CURRENT_HEADLINE_RATE * 100;
+    const diff = +(savRate - inflRate).toFixed(1);
+    const realValueChange = (diff / 100) * amount;
+    const resultEl = document.getElementById('savResult');
+    const verdictEl = document.getElementById('savVerdict');
+    resultEl.innerHTML = `Your savings rate: <b>${savRate}%</b> vs current inflation: <b>${inflRate.toFixed(1)}%</b>`;
+    if (diff >= 0) {
+      verdictEl.innerHTML = `<div class="verdict good">Your MWK ${amount.toLocaleString()} is gaining approximately MWK ${Math.round(realValueChange).toLocaleString()} in real value per year (+${diff}pp above inflation).</div>`;
+    } else {
+      verdictEl.innerHTML = `<div class="verdict bad">Your MWK ${amount.toLocaleString()} is losing approximately MWK ${Math.round(Math.abs(realValueChange)).toLocaleString()} in real value per year (${Math.abs(diff)}pp below inflation).</div>`;
+    }
   }
 
-  // ---- Monthly entry ----
-  async function saveEntry() {
-    const body = {
-      month: document.getElementById('fMonth').value,
-      label: document.getElementById('fLabel').value,
-      headline: parseFloat(document.getElementById('fHeadline').value),
-      food: document.getElementById('fFood').value ? parseFloat(document.getElementById('fFood').value) : null,
-      nonFood: document.getElementById('fNonFood').value ? parseFloat(document.getElementById('fNonFood').value) : null,
-      source: document.getElementById('fSource').value
-    };
-    const res = await fetch('/api/admin/entries', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    const data = await res.json();
-    document.getElementById('entryMsg').innerHTML = data.ok
-      ? '<div class="adm-msg ok">Saved. The public dashboard now shows this month.</div>'
-      : `<div class="adm-msg err">${data.error}</div>`;
-    if (data.ok) { loadHistory(); loadOverview(); }
-  }
+  function runPassThrough() {
+    const resultEl = document.getElementById('ptResult');
+    const priceThen = parseFloat(document.getElementById('ptPriceThen').value);
+    const monthsAgo = parseFloat(document.getElementById('ptMonthsAgo').value);
+    const priceNowInput = document.getElementById('ptPriceNow').value;
+    const priceNow = priceNowInput !== '' ? parseFloat(priceNowInput) : null;
 
-  function editEntry(e) {
-    document.getElementById('fMonth').value = e.month;
-    document.getElementById('fLabel').value = e.label;
-    document.getElementById('fHeadline').value = e.headline;
-    document.getElementById('fFood').value = e.food ?? '';
-    document.getElementById('fNonFood').value = e.nonFood ?? '';
-    document.getElementById('fSource').value = e.source || '';
-    document.querySelector('.adm-tab').click(); // fallback
-    showTab('monthly', document.querySelectorAll('.adm-tab')[1]);
-  }
+    if (!priceThen || priceThen <= 0 || !monthsAgo || monthsAgo <= 0) {
+      resultEl.textContent = 'Enter a valid price and a number of months greater than 0.';
+      return;
+    }
 
-  async function deleteEntry(month) {
-    if (!confirm('Delete ' + month + '?')) return;
-    await fetch('/api/admin/entries/' + encodeURIComponent(month), { method: 'DELETE', headers: authHeaders() });
-    loadHistory(); loadOverview();
-  }
+    if (!FX_HISTORY || FX_HISTORY.length === 0) {
+      resultEl.textContent = 'No exchange rate data has been published yet, so this estimate is not available. Check back once a rate is added.';
+      return;
+    }
 
-  // ---- History ----
-  async function loadHistory() {
-    const entries = await fetch('/api/entries').then(r => r.json());
-    const body = document.getElementById('historyBody');
-    body.innerHTML = '';
-    entries.slice().reverse().forEach(e => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${e.label}</td><td>${e.headline}%</td><td>${e.food ?? '—'}%</td><td>${e.nonFood ?? '—'}%</td>
-        <td><button class="adm-btn" style="padding:4px 10px;font-size:11px;" onclick='editEntry(${JSON.stringify(e)})'>Edit</button>
-        <button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteEntry('${e.month}')">Delete</button></td>`;
-      body.appendChild(tr);
+    if (FX_HISTORY.length === 1) {
+      const only = FX_HISTORY[0];
+      resultEl.innerHTML = `Only one exchange rate is on file so far (<b>${only.usd.toLocaleString()} MWK/USD</b>, as of ${only.date}, source: ${only.source || 'unknown'}). There isn't enough history yet to estimate how the rate has moved over the past ${monthsAgo} month${monthsAgo == 1 ? '' : 's'}. As more monthly rates are added, this tool will be able to show the estimate automatically.`;
+      return;
+    }
+
+    // Sort ascending by date, just in case
+    const sorted = FX_HISTORY.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+    const current = sorted[sorted.length - 1];
+
+    const today = new Date(current.date);
+    const targetDate = new Date(today);
+    targetDate.setMonth(targetDate.getMonth() - monthsAgo);
+
+    // Find the entry closest to the target date
+    let closest = sorted[0];
+    let closestDiff = Math.abs(new Date(sorted[0].date) - targetDate);
+    sorted.forEach(entry => {
+      const diff = Math.abs(new Date(entry.date) - targetDate);
+      if (diff < closestDiff) {
+        closest = entry;
+        closestDiff = diff;
+      }
     });
+
+    if (closest.date === current.date) {
+      resultEl.innerHTML = `The only historical exchange rate on file close to ${monthsAgo} month${monthsAgo == 1 ? '' : 's'} ago is the same as the current rate (${current.date}), so there isn't enough separation in the data yet to estimate a change over this period. As more monthly rates are added, this tool will improve.`;
+      return;
+    }
+
+    const depreciationPct = ((current.usd - closest.usd) / closest.usd) * 100;
+    const fxImpliedPrice = priceThen * (current.usd / closest.usd);
+    const daysOff = Math.round(closestDiff / (1000 * 60 * 60 * 24));
+    const approxNote = daysOff > 20
+      ? ` (closest available rate on file to that date is from ${closest.date}, about ${Math.round(daysOff / 30)} month${Math.round(daysOff / 30) == 1 ? '' : 's'} off from what you asked for)`
+      : '';
+
+    let html = `Over this period (from <b>${closest.date}</b> to <b>${current.date}</b>${approxNote}), the MWK ${depreciationPct >= 0 ? 'depreciated' : 'appreciated'} by <b>${Math.abs(depreciationPct).toFixed(1)}%</b> against the USD (source: ${closest.source || 'unknown'} → ${current.source || 'unknown'}). This is one factor that can push imported costs up by a similar magnitude — it is not the only one.<br><br>` +
+      `If your item's price had moved purely in line with this currency shift, it would now cost roughly <b>MWK ${Math.round(fxImpliedPrice).toLocaleString()}</b> — up from the MWK ${priceThen.toLocaleString()} you paid before.`;
+
+    if (priceNow !== null && priceNow > 0) {
+      const actualChangePct = ((priceNow - priceThen) / priceThen) * 100;
+      const gap = actualChangePct - depreciationPct;
+      html += `<br><br>Your actual price went from MWK ${priceThen.toLocaleString()} to MWK ${priceNow.toLocaleString()} — a <b>${actualChangePct.toFixed(1)}%</b> increase, compared to an FX-implied increase of <b>${depreciationPct.toFixed(1)}%</b>. The ${Math.abs(gap).toFixed(1)} percentage point gap likely reflects other factors — supplier pricing, customs duties, shipping costs, or local demand — rather than currency movement alone.`;
+    }
+
+    html += `<br><br><span style="font-size:12px;color:#9a8f74;">This is an illustration of the currency effect only, based on the two nearest exchange rate points on file. It is not a precise forecast of any specific item's price.</span>`;
+
+    resultEl.innerHTML = html;
   }
 
-  // ---- Other indicators ----
-  async function loadOther() {
-    const s = await fetch('/api/summary').then(r => r.json());
-    document.getElementById('pRate').value = s.policyRates.policyRate ?? '';
-    document.getElementById('pLombard').value = s.policyRates.lombardRate ?? '';
-    document.getElementById('pLocal').value = s.policyRates.liquidityReserveLocal ?? '';
-    document.getElementById('pForeign').value = s.policyRates.liquidityReserveForeign ?? '';
-    document.getElementById('pMoney').value = s.policyRates.moneySupplyGrowth ?? '';
+  function runLoanEstimate() {
+    const amt = parseFloat(document.getElementById('loanAmount').value) || 0;
+    const yrs = parseFloat(document.getElementById('loanYears').value) || 0;
+    const rate = CURRENT_POLICY_RATE || 0.24;
+    const totalCost = amt * Math.pow(1 + rate, yrs);
+    const interest = totalCost - amt;
 
-    document.getElementById('uMonthly').value = s.urbanRural.urban?.monthly ?? '';
-    document.getElementById('uFood').value = s.urbanRural.urban?.food ?? '';
-    document.getElementById('uNonFood').value = s.urbanRural.urban?.nonFood ?? '';
-    document.getElementById('rMonthly').value = s.urbanRural.rural?.monthly ?? '';
-    document.getElementById('rFood').value = s.urbanRural.rural?.food ?? '';
-    document.getElementById('rNonFood').value = s.urbanRural.rural?.nonFood ?? '';
+    // Simple amortized monthly payment estimate
+    const monthlyRate = rate / 12;
+    const numMonths = yrs * 12;
+    const monthlyPayment = monthlyRate > 0 && numMonths > 0
+      ? (amt * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -numMonths))
+      : amt / (numMonths || 1);
+    const estimatedTotalRepayment = monthlyPayment * numMonths;
 
-    document.getElementById('gProjection').value = s.growthOutlook.projection2026 ?? '';
-    document.getElementById('gPrevious').value = s.growthOutlook.previousProjection ?? '';
-  }
-
-  async function savePolicyRates() {
-    const body = {
-      policyRate: parseFloat(document.getElementById('pRate').value),
-      lombardRate: parseFloat(document.getElementById('pLombard').value),
-      liquidityReserveLocal: parseFloat(document.getElementById('pLocal').value),
-      liquidityReserveForeign: parseFloat(document.getElementById('pForeign').value),
-      moneySupplyGrowth: parseFloat(document.getElementById('pMoney').value),
-      asOf: new Date().toISOString().slice(0, 7)
-    };
-    const res = await fetch('/api/admin/policy-rates', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('policyMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+    document.getElementById('loanResult').innerHTML =
+      `At the current Policy Rate of ${(rate * 100).toFixed(1)}%, borrowing <b>MWK ${amt.toLocaleString()}</b> for ${yrs} year${yrs == 1 ? '' : 's'} would cost roughly <b>MWK ${Math.round(interest).toLocaleString()}</b> in interest alone.<br><br>` +
+      `Estimated monthly payment: <b>MWK ${Math.round(monthlyPayment).toLocaleString()}</b><br>` +
+      `Estimated total repayment: <b>MWK ${Math.round(estimatedTotalRepayment).toLocaleString()}</b><br><br>` +
+      `Your actual bank rate will likely be higher, since banks add their own margin on top of the Policy Rate.`;
   }
 
-  async function saveUrbanRural() {
-    const body = {
-      urban: { monthly: parseFloat(document.getElementById('uMonthly').value), food: parseFloat(document.getElementById('uFood').value), nonFood: parseFloat(document.getElementById('uNonFood').value) },
-      rural: { monthly: parseFloat(document.getElementById('rMonthly').value), food: parseFloat(document.getElementById('rFood').value), nonFood: parseFloat(document.getElementById('rNonFood').value) },
-      asOf: new Date().toISOString().slice(0, 7)
-    };
-    const res = await fetch('/api/admin/urban-rural', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('urMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-  }
-
-  async function saveGrowth() {
-    const body = {
-      projection2026: parseFloat(document.getElementById('gProjection').value),
-      previousProjection: parseFloat(document.getElementById('gPrevious').value),
-      asOf: new Date().toISOString().slice(0, 7)
-    };
-    const res = await fetch('/api/admin/growth-outlook', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('growthMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-  }
-
-  // ---- Yearly averages ----
-  let yearlyRows = [];
-  async function loadYearly() {
-    yearlyRows = await fetch('/api/yearly').then(r => r.json());
-    renderYearly();
-  }
-  function renderYearly() {
-    const body = document.getElementById('yearlyBody');
-    body.innerHTML = '';
-    yearlyRows.forEach((y, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${y.year}</td><td>${y.avg}%</td><td>${y.source || ''}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="removeYearlyRow(${i})">Remove</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  function addYearlyRow() {
-    const year = document.getElementById('yYear').value;
-    const avg = parseFloat(document.getElementById('yAvg').value);
-    const source = document.getElementById('ySource').value;
-    if (!year || isNaN(avg)) return;
-    yearlyRows.push({ year, avg, source });
-    renderYearly();
-    document.getElementById('yYear').value = '';
-    document.getElementById('yAvg').value = '';
-    document.getElementById('ySource').value = '';
-  }
-  function removeYearlyRow(i) { yearlyRows.splice(i, 1); renderYearly(); }
-  async function saveYearly() {
-    const res = await fetch('/api/admin/yearly', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ yearlyAverages: yearlyRows }) });
-    document.getElementById('yearlyMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-  }
-
-  // ---- Explainer ----
-  async function loadExplainer() {
-    const d = await fetch('/api/explainer').then(r => r.json());
-    document.getElementById('explainerBox').value = d.text || '';
-  }
-  async function saveExplainer() {
-    const text = document.getElementById('explainerBox').value;
-    const res = await fetch('/api/admin/explainer', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ text }) });
-    document.getElementById('explainerMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-  }
-
-  // ---- FAQ inbox ----
-  async function loadFaq() {
-    const log = await fetch('/api/admin/faq-log', { headers: authHeaders() }).then(r => r.json());
-    const body = document.getElementById('faqBody');
-    body.innerHTML = '';
-    log.slice().reverse().forEach((item, i) => {
-      const realIndex = log.length - 1 - i;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="font-size:11px;color:#9a8f74;">${new Date(item.timestamp).toLocaleString()}</td><td>${item.question}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteFaq(${realIndex})">Clear</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function deleteFaq(index) {
-    await fetch('/api/admin/faq-log/' + index, { method: 'DELETE', headers: authHeaders() });
-    loadFaq();
-  }
-
-  // ---- Contact ----
-  async function loadContact() {
-    const c = await fetch('/api/contact').then(r => r.json());
-    document.getElementById('cEmail').value = c.email || '';
-    document.getElementById('cPhone').value = c.phone || '';
-    document.getElementById('cWebsite').value = c.website || '';
-  }
-  async function saveContact() {
-    const body = {
-      email: document.getElementById('cEmail').value,
-      phone: document.getElementById('cPhone').value,
-      website: document.getElementById('cWebsite').value
-    };
-    const res = await fetch('/api/admin/contact', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('contactMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-  }
-
-  // ---- Bulk import/export ----
-  async function bulkImport() {
-    const text = document.getElementById('bulkBox').value.trim();
-    if (!text) return;
-    const rows = text.split('\n').map(line => {
-      const [month, label, headline, food, nonFood, source] = line.split(',');
-      return {
-        month: month?.trim(), label: label?.trim(),
-        headline: parseFloat(headline), food: food ? parseFloat(food) : null, nonFood: nonFood ? parseFloat(nonFood) : null,
-        source: source?.trim() || ''
-      };
-    }).filter(r => r.month && r.label && !isNaN(r.headline));
-    const res = await fetch('/api/admin/entries/bulk', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ rows }) });
-    const data = await res.json();
-    document.getElementById('bulkMsg').innerHTML = data.ok ? `<div class="adm-msg ok">Imported ${data.count} row(s).</div>` : '<div class="adm-msg err">Error.</div>';
-    loadHistory(); loadOverview();
-  }
-
-  function exportCsv() {
-    fetch('/api/admin/export', { headers: authHeaders() })
-      .then(r => r.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'inflation-data.csv';
-        a.click();
-      });
-  }
-
-
-  // ---- Exchange Rate ----
-  async function loadFx() {
-    const rows = await fetch('/api/exchange-rates').then(r => r.json());
-    const body = document.getElementById('fxBody');
-    body.innerHTML = '';
-    rows.slice().reverse().forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.date}</td><td>${r.usd}</td><td>${r.gbp ?? '—'}</td><td>${r.zar ?? '—'}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteFx('${r.date}')">Delete</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function saveFx() {
-    const body = { date: document.getElementById('fxDate').value, usd: parseFloat(document.getElementById('fxUsd').value),
-      gbp: parseFloat(document.getElementById('fxGbp').value) || null, zar: parseFloat(document.getElementById('fxZar').value) || null,
-      source: document.getElementById('fxSource').value };
-    const res = await fetch('/api/admin/exchange-rates', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('fxMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-    loadFx();
-  }
-  async function deleteFx(date) {
-    await fetch('/api/admin/exchange-rates/' + date, { method: 'DELETE', headers: authHeaders() });
-    loadFx();
-  }
-  async function fetchLatestFx() {
-    document.getElementById('fxFetchMsg').innerHTML = '<div class="adm-msg ok">Fetching...</div>';
-    const res = await fetch('/api/fetch-exchange-rate').then(r => r.json());
-    document.getElementById('fxFetchMsg').innerHTML = res.ok
-      ? `<div class="adm-msg ok">Fetched: USD ${res.entry.usd} MWK</div>`
-      : `<div class="adm-msg err">${res.error}</div>`;
-    loadFx();
-  }
-
-  // ---- T-Bills ----
-  async function loadTbills() {
-    const rows = await fetch('/api/tbills').then(r => r.json());
-    const body = document.getElementById('tbillBody');
-    body.innerHTML = '';
-    rows.forEach((r, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.date}</td><td>${r.tenor}</td><td>${r.yield}%</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteTbill(${i})">Delete</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function saveTbill() {
-    const body = { date: document.getElementById('tbDate').value, tenor: document.getElementById('tbTenor').value,
-      yield: parseFloat(document.getElementById('tbYield').value), source: document.getElementById('tbSource').value };
-    const res = await fetch('/api/admin/tbills', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('tbillMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
-    loadTbills();
-  }
-  async function deleteTbill(i) {
-    await fetch('/api/admin/tbills/' + i, { method: 'DELETE', headers: authHeaders() });
-    loadTbills();
-  }
-
-  // ---- OMO ----
-  async function loadOmo() {
-    const rows = await fetch('/api/omo').then(r => r.json());
-    const body = document.getElementById('omoBody');
-    body.innerHTML = '';
-    rows.slice().reverse().forEach((r) => {
-      const i = rows.indexOf(r);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.date}</td><td>${r.action}</td><td>${r.amount ?? '—'}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteOmo(${i})">Delete</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function saveOmo() {
-    const body = { date: document.getElementById('omoDate').value, action: document.getElementById('omoAction').value,
-      amount: parseFloat(document.getElementById('omoAmount').value) || null, source: document.getElementById('omoSource').value };
-    const res = await fetch('/api/admin/omo', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('omoMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
-    loadOmo();
-  }
-  async function deleteOmo(i) {
-    await fetch('/api/admin/omo/' + i, { method: 'DELETE', headers: authHeaders() });
-    loadOmo();
-  }
-
-  // ---- Foreign Reserves ----
-  async function loadReserves() {
-    const rows = await fetch('/api/reserves').then(r => r.json());
-    const body = document.getElementById('reservesBody');
-    body.innerHTML = '';
-    rows.slice().reverse().forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.month}</td><td>$${(r.amountUSD/1000000).toFixed(1)}M</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteReserves('${r.month}')">Delete</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function saveReserves() {
-    const body = { month: document.getElementById('resMonth').value, amountUSD: parseFloat(document.getElementById('resAmount').value),
-      source: document.getElementById('resSource').value,
-      monthlyImportBillUSD: parseFloat(document.getElementById('resImportBill').value) || null,
-      importBillSource: document.getElementById('resImportSource').value };
-    const res = await fetch('/api/admin/reserves', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('reservesMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-    loadReserves();
-  }
-  async function deleteReserves(month) {
-    await fetch('/api/admin/reserves/' + month, { method: 'DELETE', headers: authHeaders() });
-    loadReserves();
-  }
-
-
-  // ---- News ----
-  async function loadNews() {
-    const rows = await fetch('/api/news').then(r => r.json());
-    const body = document.getElementById('newsBody');
-    body.innerHTML = '';
-    rows.forEach((r, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.date}</td><td>${r.title}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteNews(${i})">Delete</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function saveNews() {
-    const body = { date: document.getElementById('nDate').value, title: document.getElementById('nTitle').value,
-      summary: document.getElementById('nSummary').value, link: document.getElementById('nLink').value };
-    const res = await fetch('/api/admin/news', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('newsMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
-    loadNews();
-  }
-  async function deleteNews(i) {
-    await fetch('/api/admin/news/' + i, { method: 'DELETE', headers: authHeaders() });
-    loadNews();
-  }
-
-  // ---- MPC Meetings ----
-  async function loadMpc() {
-    const s = await fetch('/api/mpc-next').then(r => r.json());
-    document.getElementById('mpcNextDate').value = s.nextMeetingDate || '';
-
-    const rows = await fetch('/api/mpc').then(r => r.json());
-    const body = document.getElementById('mpcBody');
-    body.innerHTML = '';
-    rows.slice().reverse().forEach((r) => {
-      const i = rows.indexOf(r);
-      const changeLabel = r.changeBps ? `${r.decision === 'Cut' ? '-' : '+'}${r.changeBps}bps` : '—';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.date}</td><td>${r.decision}</td><td>${changeLabel}</td><td style="max-width:220px;">${r.reason}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteMpc(${i})">Delete</button></td>`;
-      body.appendChild(tr);
-    });
-  }
-  async function saveMpcNext() {
-    const body = { nextMeetingDate: document.getElementById('mpcNextDate').value };
-    const res = await fetch('/api/admin/mpc-next', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('mpcNextMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
-  }
-  async function saveMpc() {
-    const body = {
-      date: document.getElementById('mpcDate').value,
-      decision: document.getElementById('mpcDecision').value,
-      changeBps: parseFloat(document.getElementById('mpcChangeBps').value) || null,
-      reason: document.getElementById('mpcReason').value,
-      source: document.getElementById('mpcSource').value,
-      link: document.getElementById('mpcLink').value
-    };
-    const res = await fetch('/api/admin/mpc', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
-    document.getElementById('mpcMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
-    loadMpc();
-  }
-  async function deleteMpc(i) {
-    await fetch('/api/admin/mpc/' + i, { method: 'DELETE', headers: authHeaders() });
-    loadMpc();
-  }
+  loadToolsData();
 </script>
 </body>
-  </html>
+</html>
