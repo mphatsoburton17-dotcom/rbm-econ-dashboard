@@ -299,9 +299,9 @@
       return;
     }
     const mwk = toMwk(amt, from);
-    if (mwk === null) { resultEl.textContent = 'That rate isn\\'t available yet.'; return; }
+    if (mwk === null) { resultEl.textContent = 'That rate is not available yet.'; return; }
     const result = fromMwk(mwk, to);
-    if (result === null) { resultEl.textContent = 'That rate isn\\'t available yet.'; return; }
+    if (result === null) { resultEl.textContent = 'That rate is not available yet.'; return; }
     const dateNote = FX_RATE_DATE ? ` <span style="font-size:11px;color:#9a8f74;">(rate as of ${FX_RATE_DATE})</span>` : '';
     resultEl.innerHTML = `<b>${amt.toLocaleString()} ${from}</b> ≈ <b>${result.toLocaleString(undefined, {maximumFractionDigits: 2})} ${to}</b>${dateNote}`;
   }
