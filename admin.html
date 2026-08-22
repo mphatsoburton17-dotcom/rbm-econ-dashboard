@@ -65,6 +65,7 @@
       <button class="adm-tab" onclick="showTab('tbills', this)">T-Bill Yields</button>
       <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
       <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
+      <button class="adm-tab" onclick="showTab('mpc', this)">MPC Meetings</button>
     </div>
 
     <!-- 1. OVERVIEW -->
@@ -313,6 +314,43 @@
       <div id="newsMsg"></div>
     </div>
 
+    <!-- 15. MPC MEETINGS -->
+    <div class="adm-section" id="tab-mpc">
+      <h3>MPC Meeting Tracker</h3>
+      <div class="sub">Each row is one Monetary Policy Committee meeting. "Reason" should be a short paraphrase of RBM's own statement — not a direct quote.</div>
+
+      <h4 style="margin:0 0 8px; font-size:13px; color:#7a6f52;">Next Scheduled Meeting</h4>
+      <div class="adm-row">
+        <div class="adm-field"><label>Next Meeting Date</label><input id="mpcNextDate" placeholder="2026-10-15"></div>
+      </div>
+      <button class="adm-btn" onclick="saveMpcNext()">Save Next Meeting Date</button>
+      <div id="mpcNextMsg"></div>
+
+      <h4 style="margin:20px 0 8px; font-size:13px; color:#7a6f52;">Past Meetings</h4>
+      <table class="adm-table">
+        <thead><tr><th>Date</th><th>Decision</th><th>Change</th><th>Reason</th><th></th></tr></thead>
+        <tbody id="mpcBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Meeting Date</label><input id="mpcDate" placeholder="2026-08-15"></div>
+        <div class="adm-field"><label>Decision</label>
+          <select id="mpcDecision" style="padding:8px 10px;border-radius:8px;border:1px solid #ECE4D2;">
+            <option>Held</option><option>Raised</option><option>Cut</option>
+          </select>
+        </div>
+        <div class="adm-field"><label>Change (bps, if any)</label><input type="number" id="mpcChangeBps" placeholder="50"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Reason (one sentence, paraphrased)</label><input id="mpcReason" placeholder="RBM cited persistent food inflation pressure."></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Source</label><input id="mpcSource" placeholder="RBM MPC Statement, Aug 2026"></div>
+        <div class="adm-field"><label>Link (optional)</label><input id="mpcLink" placeholder="https://www.rbm.mw/..."></div>
+      </div>
+      <button class="adm-btn" onclick="saveMpc()">Add Meeting</button>
+      <div id="mpcMsg"></div>
+    </div>
+
   </div>
 </div>
 
@@ -331,7 +369,7 @@
       document.getElementById('loginBox').style.display = 'none';
       document.getElementById('panel').style.display = 'block';
       loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
-      loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews();
+      loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews(); loadMpc();
     } else {
       document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
     }
@@ -706,6 +744,46 @@
   async function deleteNews(i) {
     await fetch('/api/admin/news/' + i, { method: 'DELETE', headers: authHeaders() });
     loadNews();
+  }
+
+  // ---- MPC Meetings ----
+  async function loadMpc() {
+    const s = await fetch('/api/mpc-next').then(r => r.json());
+    document.getElementById('mpcNextDate').value = s.nextMeetingDate || '';
+
+    const rows = await fetch('/api/mpc').then(r => r.json());
+    const body = document.getElementById('mpcBody');
+    body.innerHTML = '';
+    rows.slice().reverse().forEach((r) => {
+      const i = rows.indexOf(r);
+      const changeLabel = r.changeBps ? `${r.decision === 'Cut' ? '-' : '+'}${r.changeBps}bps` : '—';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.date}</td><td>${r.decision}</td><td>${changeLabel}</td><td style="max-width:220px;">${r.reason}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteMpc(${i})">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveMpcNext() {
+    const body = { nextMeetingDate: document.getElementById('mpcNextDate').value };
+    const res = await fetch('/api/admin/mpc-next', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('mpcNextMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+  }
+  async function saveMpc() {
+    const body = {
+      date: document.getElementById('mpcDate').value,
+      decision: document.getElementById('mpcDecision').value,
+      changeBps: parseFloat(document.getElementById('mpcChangeBps').value) || null,
+      reason: document.getElementById('mpcReason').value,
+      source: document.getElementById('mpcSource').value,
+      link: document.getElementById('mpcLink').value
+    };
+    const res = await fetch('/api/admin/mpc', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('mpcMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Added.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadMpc();
+  }
+  async function deleteMpc(i) {
+    await fetch('/api/admin/mpc/' + i, { method: 'DELETE', headers: authHeaders() });
+    loadMpc();
   }
 </script>
 </body>
