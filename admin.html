@@ -66,6 +66,7 @@
       <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
       <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
       <button class="adm-tab" onclick="showTab('mpc', this)">MPC Meetings</button>
+      <button class="adm-tab" onclick="showTab('regional', this)">Regional Comparator</button>
     </div>
 
     <!-- 1. OVERVIEW -->
@@ -351,6 +352,27 @@
       <div id="mpcMsg"></div>
     </div>
 
+    <!-- 16. REGIONAL COMPARATOR -->
+    <div class="adm-section" id="tab-regional">
+      <h3>Regional Comparator</h3>
+      <div class="sub">One row per country. Include Malawi itself plus 2-3 regional peers (e.g. Zambia, Tanzania, Mozambique). Figures should come from each country's own central bank or the IMF, and each country's source should be entered separately since they come from different places.</div>
+      <table class="adm-table">
+        <thead><tr><th>Country</th><th>Headline Inflation</th><th>Policy Rate</th><th>As Of</th><th></th></tr></thead>
+        <tbody id="regionalBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Country</label><input id="regCountry" placeholder="Zambia"></div>
+        <div class="adm-field"><label>Headline Inflation (%)</label><input type="number" step="0.1" id="regInflation"></div>
+        <div class="adm-field"><label>Policy Rate (%)</label><input type="number" step="0.1" id="regPolicyRate"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>As Of</label><input id="regAsOf" placeholder="Jul 2026"></div>
+        <div class="adm-field"><label>Source</label><input id="regSource" placeholder="Bank of Zambia / IMF"></div>
+      </div>
+      <button class="adm-btn" onclick="saveRegional()">Save Country</button>
+      <div id="regionalMsg"></div>
+    </div>
+
   </div>
 </div>
 
@@ -369,7 +391,7 @@
       document.getElementById('loginBox').style.display = 'none';
       document.getElementById('panel').style.display = 'block';
       loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
-      loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews(); loadMpc();
+      loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews(); loadMpc(); loadRegional();
     } else {
       document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
     }
@@ -784,6 +806,39 @@
   async function deleteMpc(i) {
     await fetch('/api/admin/mpc/' + i, { method: 'DELETE', headers: authHeaders() });
     loadMpc();
+  }
+
+  // ---- Regional Comparator ----
+  async function loadRegional() {
+    const rows = await fetch('/api/regional').then(r => r.json());
+    const body = document.getElementById('regionalBody');
+    body.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.country}</td><td>${r.headlineInflation != null ? r.headlineInflation + '%' : '—'}</td><td>${r.policyRate != null ? r.policyRate + '%' : '—'}</td><td>${r.asOf || '—'}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteRegional('${r.country}')">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveRegional() {
+    const body = {
+      country: document.getElementById('regCountry').value,
+      headlineInflation: document.getElementById('regInflation').value ? parseFloat(document.getElementById('regInflation').value) : null,
+      policyRate: document.getElementById('regPolicyRate').value ? parseFloat(document.getElementById('regPolicyRate').value) : null,
+      asOf: document.getElementById('regAsOf').value,
+      source: document.getElementById('regSource').value
+    };
+    if (!body.country) {
+      document.getElementById('regionalMsg').innerHTML = '<div class="adm-msg err">Country name is required.</div>';
+      return;
+    }
+    const res = await fetch('/api/admin/regional', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('regionalMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadRegional();
+  }
+  async function deleteRegional(country) {
+    await fetch('/api/admin/regional/' + encodeURIComponent(country), { method: 'DELETE', headers: authHeaders() });
+    loadRegional();
   }
 </script>
 </body>
