@@ -219,5 +219,14 @@
   ],
   "mpcNext": {
     "nextMeetingDate": ""
-  }
+  },
+  "regionalData": [
+    {
+      "country": "Malawi",
+      "headlineInflation": 20.8,
+      "policyRate": 24.0,
+      "asOf": "Jul 2026",
+      "source": "RBM/NSO CPI Release, Jul 2026"
+    }
+  ]
 }
