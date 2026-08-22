@@ -192,7 +192,9 @@
     {
       "month": "2026-07",
       "amountUSD": 480000000,
-      "source": "RBM Reserves Report, Jul 2026"
+      "source": "RBM Reserves Report, Jul 2026",
+      "monthlyImportBillUSD": 300000000,
+      "importBillSource": "CEIC/NSO \u2014 recent monthly average"
     }
   ],
   "news": [
