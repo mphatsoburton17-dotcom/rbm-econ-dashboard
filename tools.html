@@ -61,15 +61,15 @@
       <div class="hero-nav">
         <a class="navbtn" href="index.html">Dashboard</a>
         <a class="navbtn active" href="tools.html">Tools</a>
-      </div>
-    </div>
-    <div class="nav-more">
-      <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
-      <div class="nav-more-panel" id="navMorePanel">
-        <a href="learn.html">Learn</a>
-        <a href="news.html">News</a>
-        <a href="about.html">About</a>
-        <a href="sources.html">Sources</a>
+        <div class="nav-more">
+          <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
+          <div class="nav-more-panel" id="navMorePanel">
+            <a href="learn.html">Learn</a>
+            <a href="news.html">News</a>
+            <a href="about.html">About</a>
+            <a href="sources.html">Sources</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -105,6 +105,7 @@
     </div>
     <button onclick="runConvert()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Convert</button>
     <div class="calc-result" id="fxResult">Enter an amount and press Convert.</div>
+    <div class="tool-note">This is the interbank rate. Street/forex bureau rates may differ.</div>
   </div>
 
   <div class="section-title"><span>Inflation Impact Calculator</span> <span class="tag">Tool</span></div>
@@ -117,17 +118,19 @@
       <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
     </div>
     <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+    <div class="tool-note">A future update will show this as a real-world comparison (e.g. "X fewer bags of maize") once staple-price data from NSO's consumer basket is available.</div>
   </div>
 
   <div class="section-title"><span>Savings vs. Inflation Checker</span> <span class="tag">Tool</span></div>
   <div class="calc">
     <h3>Is your savings interest beating inflation?</h3>
-    <div class="desc">Compares the interest rate your savings earn against the current inflation rate.</div>
+    <div class="desc">Compares the interest rate your savings earn against the current inflation rate, in real MWK terms.</div>
     <div class="calc-row">
+      <div class="calc-field"><label>Amount saved (MWK)</label><input type="number" id="savAmount" value="50000"></div>
       <div class="calc-field"><label>Your savings interest rate (% per year)</label><input type="number" step="0.1" id="savRate" value="8"></div>
       <button onclick="runSavingsCheck()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Check</button>
     </div>
-    <div class="calc-result" id="savResult">Enter your savings rate and press Check.</div>
+    <div class="calc-result" id="savResult">Enter an amount and your savings rate, then press Check.</div>
     <div id="savVerdict"></div>
   </div>
 
@@ -176,6 +179,7 @@
   let CURRENT_HEADLINE_RATE = 0.208;
   let CURRENT_POLICY_RATE = 0.24;
   let FX_RATES = null;
+  let FX_RATE_DATE = null;
 
   async function loadToolsData() {
     try {
@@ -193,6 +197,7 @@
       if (Array.isArray(rates) && rates.length) {
         const latest = rates[rates.length - 1];
         FX_RATES = { usd: latest.usd, gbp: latest.gbp, zar: latest.zar };
+        FX_RATE_DATE = latest.date;
         document.getElementById('fxAsOf').textContent = 'As of ' + latest.date;
       } else {
         document.getElementById('fxAsOf').textContent = 'No rate published yet';
@@ -241,7 +246,8 @@
     if (mwk === null) { resultEl.textContent = 'That rate isn\\'t available yet.'; return; }
     const result = fromMwk(mwk, to);
     if (result === null) { resultEl.textContent = 'That rate isn\\'t available yet.'; return; }
-    resultEl.innerHTML = `<b>${amt.toLocaleString()} ${from}</b> ≈ <b>${result.toLocaleString(undefined, {maximumFractionDigits: 2})} ${to}</b>`;
+    const dateNote = FX_RATE_DATE ? ` <span style="font-size:11px;color:#9a8f74;">(rate as of ${FX_RATE_DATE})</span>` : '';
+    resultEl.innerHTML = `<b>${amt.toLocaleString()} ${from}</b> ≈ <b>${result.toLocaleString(undefined, {maximumFractionDigits: 2})} ${to}</b>${dateNote}`;
   }
 
   function runCalc() {
@@ -254,16 +260,18 @@
   }
 
   function runSavingsCheck() {
+    const amount = parseFloat(document.getElementById('savAmount').value) || 0;
     const savRate = parseFloat(document.getElementById('savRate').value) || 0;
     const inflRate = CURRENT_HEADLINE_RATE * 100;
     const diff = +(savRate - inflRate).toFixed(1);
+    const realValueChange = (diff / 100) * amount;
     const resultEl = document.getElementById('savResult');
     const verdictEl = document.getElementById('savVerdict');
     resultEl.innerHTML = `Your savings rate: <b>${savRate}%</b> vs current inflation: <b>${inflRate.toFixed(1)}%</b>`;
     if (diff >= 0) {
-      verdictEl.innerHTML = `<div class="verdict good">Your savings are roughly keeping pace with inflation (+${diff}pp) — your money's buying power is holding steady or growing.</div>`;
+      verdictEl.innerHTML = `<div class="verdict good">Your MWK ${amount.toLocaleString()} is gaining approximately MWK ${Math.round(realValueChange).toLocaleString()} in real value per year (+${diff}pp above inflation).</div>`;
     } else {
-      verdictEl.innerHTML = `<div class="verdict bad">Your savings are losing to inflation by ${Math.abs(diff)}pp per year — the buying power of your saved money is shrinking over time.</div>`;
+      verdictEl.innerHTML = `<div class="verdict bad">Your MWK ${amount.toLocaleString()} is losing approximately MWK ${Math.round(Math.abs(realValueChange)).toLocaleString()} in real value per year (${Math.abs(diff)}pp below inflation).</div>`;
     }
   }
 
@@ -273,8 +281,20 @@
     const rate = CURRENT_POLICY_RATE || 0.24;
     const totalCost = amt * Math.pow(1 + rate, yrs);
     const interest = totalCost - amt;
+
+    // Simple amortized monthly payment estimate
+    const monthlyRate = rate / 12;
+    const numMonths = yrs * 12;
+    const monthlyPayment = monthlyRate > 0 && numMonths > 0
+      ? (amt * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -numMonths))
+      : amt / (numMonths || 1);
+    const estimatedTotalRepayment = monthlyPayment * numMonths;
+
     document.getElementById('loanResult').innerHTML =
-      `At the current Policy Rate of ${(rate * 100).toFixed(1)}%, borrowing <b>MWK ${amt.toLocaleString()}</b> for ${yrs} year${yrs == 1 ? '' : 's'} would cost roughly <b>MWK ${Math.round(interest).toLocaleString()}</b> in interest alone — for a total repayment near <b>MWK ${Math.round(totalCost).toLocaleString()}</b>. Your actual bank rate will likely be higher, since banks add their own margin on top of the Policy Rate.`;
+      `At the current Policy Rate of ${(rate * 100).toFixed(1)}%, borrowing <b>MWK ${amt.toLocaleString()}</b> for ${yrs} year${yrs == 1 ? '' : 's'} would cost roughly <b>MWK ${Math.round(interest).toLocaleString()}</b> in interest alone.<br><br>` +
+      `Estimated monthly payment: <b>MWK ${Math.round(monthlyPayment).toLocaleString()}</b><br>` +
+      `Estimated total repayment: <b>MWK ${Math.round(estimatedTotalRepayment).toLocaleString()}</b><br><br>` +
+      `Your actual bank rate will likely be higher, since banks add their own margin on top of the Policy Rate.`;
   }
 
   loadToolsData();
