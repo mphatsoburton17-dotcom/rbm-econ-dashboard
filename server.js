@@ -273,12 +273,13 @@ app.get('/api/reserves', (req, res) => {
 });
 
 app.post('/api/admin/reserves', requireAdmin, (req, res) => {
-  const { month, amountUSD, source } = req.body;
+  const { month, amountUSD, source, monthlyImportBillUSD, importBillSource } = req.body;
   const existing = db.get('foreignReserves').find({ month }).value();
+  const entry = { month, amountUSD, source, monthlyImportBillUSD, importBillSource };
   if (existing) {
-    db.get('foreignReserves').find({ month }).assign({ amountUSD, source }).write();
+    db.get('foreignReserves').find({ month }).assign(entry).write();
   } else {
-    db.get('foreignReserves').push({ month, amountUSD, source }).write();
+    db.get('foreignReserves').push(entry).write();
   }
   res.json({ ok: true });
 });
