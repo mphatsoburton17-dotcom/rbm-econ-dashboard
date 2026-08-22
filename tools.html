@@ -26,9 +26,7 @@
   }
   .nav-more-panel a:hover { background: #F1EAD8; }
 
-  .tool-note {
-    font-size: 13px; color: #8a7f63; margin-top: 10px; line-height: 1.5;
-  }
+  .tool-note { font-size: 13px; color: #8a7f63; margin-top: 10px; line-height: 1.5; }
   .swap-btn {
     border: 1px solid rgba(0,0,0,0.12); background: #fff; border-radius: 999px;
     width: 38px; height: 38px; cursor: pointer; font-size: 16px; line-height: 1;
@@ -38,6 +36,10 @@
     margin-top: 28px; padding: 16px 18px; border-radius: 12px;
     background: #F1EAD8; color: #6b5f45; font-size: 13px; line-height: 1.6;
   }
+  .verdict { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 700; }
+  .verdict.good { background: #E6F4EA; color: #2E8B45; }
+  .verdict.bad { background: #FBE9E9; color: #C43D3D; }
+  select.tool-select { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15); font-family:'Inter'; font-size:14px; }
 </style>
 </head>
 <body>
@@ -63,6 +65,7 @@
         <div class="nav-more">
           <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">⋯</button>
           <div class="nav-more-panel" id="navMorePanel">
+            <a href="news.html">News</a>
             <a href="about.html">About</a>
             <a href="sources.html">Sources</a>
           </div>
@@ -75,7 +78,6 @@
   <div class="calc">
     <h3>Convert MWK ↔ USD / GBP / ZAR</h3>
     <div class="desc">Uses the most recently published exchange rate.</div>
-
     <div class="calc-row" style="align-items:flex-end;">
       <div class="calc-field">
         <label>Amount</label>
@@ -83,7 +85,7 @@
       </div>
       <div class="calc-field">
         <label>From</label>
-        <select id="fxFrom" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15);">
+        <select id="fxFrom" class="tool-select">
           <option value="MWK">MWK</option>
           <option value="USD">USD</option>
           <option value="GBP">GBP</option>
@@ -93,7 +95,7 @@
       <button class="swap-btn" onclick="swapFx()" title="Swap">⇄</button>
       <div class="calc-field">
         <label>To</label>
-        <select id="fxTo" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15);">
+        <select id="fxTo" class="tool-select">
           <option value="USD">USD</option>
           <option value="MWK">MWK</option>
           <option value="GBP">GBP</option>
@@ -115,6 +117,37 @@
       <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
     </div>
     <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+  </div>
+
+  <div class="section-title"><span>Savings vs. Inflation Checker</span> <span class="tag">Tool</span></div>
+  <div class="calc">
+    <h3>Is your savings interest beating inflation?</h3>
+    <div class="desc">Compares the interest rate your savings earn against the current inflation rate.</div>
+    <div class="calc-row">
+      <div class="calc-field"><label>Your savings interest rate (% per year)</label><input type="number" step="0.1" id="savRate" value="8"></div>
+      <button onclick="runSavingsCheck()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Check</button>
+    </div>
+    <div class="calc-result" id="savResult">Enter your savings rate and press Check.</div>
+    <div id="savVerdict"></div>
+  </div>
+
+  <div class="section-title"><span>Loan Cost Estimator</span> <span class="tag">Tool</span></div>
+  <div class="calc">
+    <h3>Roughly what would a loan cost?</h3>
+    <div class="desc">Based on RBM's current Policy Rate only — your bank will add its own margin on top, so treat this as a starting point, not a quote.</div>
+    <div class="calc-row">
+      <div class="calc-field"><label>Loan amount (MWK)</label><input type="number" id="loanAmount" value="1000000"></div>
+      <div class="calc-field"><label>Term (years)</label><input type="number" id="loanYears" value="1"></div>
+      <button onclick="runLoanEstimate()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Estimate</button>
+    </div>
+    <div class="calc-result" id="loanResult">Enter a loan amount and term and press Estimate.</div>
+  </div>
+
+  <div class="section-title"><span>Treasury Bill Comparison</span> <span class="tag">Real, sourced values</span></div>
+  <div class="panel">
+    <h3>Which tenor pays more?</h3>
+    <div class="desc">Latest published RBM Treasury Bill auction yields, by tenor.</div>
+    <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Auction Date</th></tr></thead><tbody id="tbillCompareTable"></tbody></table>
   </div>
 
   <div class="disclaimer-box">
@@ -140,9 +173,9 @@
     if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
   });
 
-  // ---- Data loaded once on page load ----
   let CURRENT_HEADLINE_RATE = 0.208;
-  let FX_RATES = null; // { usd, gbp, zar } = MWK per 1 unit of that currency
+  let CURRENT_POLICY_RATE = 0.24;
+  let FX_RATES = null;
 
   async function loadToolsData() {
     try {
@@ -150,7 +183,10 @@
       if (summary.latest && summary.latest.headline != null) {
         CURRENT_HEADLINE_RATE = summary.latest.headline / 100;
       }
-    } catch (e) { /* keep default */ }
+      if (summary.policyRates && summary.policyRates.policyRate != null) {
+        CURRENT_POLICY_RATE = summary.policyRates.policyRate / 100;
+      }
+    } catch (e) {}
 
     try {
       const rates = await fetch('/api/exchange-rates').then(r => r.json());
@@ -164,6 +200,17 @@
     } catch (e) {
       document.getElementById('fxAsOf').textContent = 'Rate unavailable';
     }
+
+    try {
+      const tbills = await fetch('/api/tbills').then(r => r.json());
+      const body = document.getElementById('tbillCompareTable');
+      body.innerHTML = '';
+      tbills.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.tenor}</td><td class="num">${t.yield}%</td><td style="font-size:11px;color:#9a8f74;">${t.date}</td>`;
+        body.appendChild(tr);
+      });
+    } catch (e) {}
   }
 
   function toMwk(amount, currency) {
@@ -176,30 +223,24 @@
     const rate = FX_RATES && FX_RATES[currency.toLowerCase()];
     return rate ? amountMwk / rate : null;
   }
-
   function swapFx() {
     const from = document.getElementById('fxFrom');
     const to = document.getElementById('fxTo');
-    const tmp = from.value;
-    from.value = to.value;
-    to.value = tmp;
+    const tmp = from.value; from.value = to.value; to.value = tmp;
   }
-
   function runConvert() {
     const amt = parseFloat(document.getElementById('fxAmount').value) || 0;
     const from = document.getElementById('fxFrom').value;
     const to = document.getElementById('fxTo').value;
     const resultEl = document.getElementById('fxResult');
-
     if (!FX_RATES && (from !== 'MWK' || to !== 'MWK')) {
       resultEl.textContent = 'No exchange rate has been published yet — check back once one is added.';
       return;
     }
     const mwk = toMwk(amt, from);
-    if (mwk === null) { resultEl.textContent = 'That rate isn\'t available yet.'; return; }
+    if (mwk === null) { resultEl.textContent = 'That rate isn\\'t available yet.'; return; }
     const result = fromMwk(mwk, to);
-    if (result === null) { resultEl.textContent = 'That rate isn\'t available yet.'; return; }
-
+    if (result === null) { resultEl.textContent = 'That rate isn\\'t available yet.'; return; }
     resultEl.innerHTML = `<b>${amt.toLocaleString()} ${from}</b> ≈ <b>${result.toLocaleString(undefined, {maximumFractionDigits: 2})} ${to}</b>`;
   }
 
@@ -212,8 +253,31 @@
       `At today's ${(rate * 100).toFixed(1)}% annual inflation, <b>MWK ${amt.toLocaleString()}</b> today will have the buying power of roughly <b>MWK ${Math.round(futureValue).toLocaleString()}</b> in ${yrs} year${yrs == 1 ? '' : 's'}.`;
   }
 
+  function runSavingsCheck() {
+    const savRate = parseFloat(document.getElementById('savRate').value) || 0;
+    const inflRate = CURRENT_HEADLINE_RATE * 100;
+    const diff = +(savRate - inflRate).toFixed(1);
+    const resultEl = document.getElementById('savResult');
+    const verdictEl = document.getElementById('savVerdict');
+    resultEl.innerHTML = `Your savings rate: <b>${savRate}%</b> vs current inflation: <b>${inflRate.toFixed(1)}%</b>`;
+    if (diff >= 0) {
+      verdictEl.innerHTML = `<div class="verdict good">Your savings are roughly keeping pace with inflation (+${diff}pp) — your money's buying power is holding steady or growing.</div>`;
+    } else {
+      verdictEl.innerHTML = `<div class="verdict bad">Your savings are losing to inflation by ${Math.abs(diff)}pp per year — the buying power of your saved money is shrinking over time.</div>`;
+    }
+  }
+
+  function runLoanEstimate() {
+    const amt = parseFloat(document.getElementById('loanAmount').value) || 0;
+    const yrs = parseFloat(document.getElementById('loanYears').value) || 0;
+    const rate = CURRENT_POLICY_RATE || 0.24;
+    const totalCost = amt * Math.pow(1 + rate, yrs);
+    const interest = totalCost - amt;
+    document.getElementById('loanResult').innerHTML =
+      `At the current Policy Rate of ${(rate * 100).toFixed(1)}%, borrowing <b>MWK ${amt.toLocaleString()}</b> for ${yrs} year${yrs == 1 ? '' : 's'} would cost roughly <b>MWK ${Math.round(interest).toLocaleString()}</b> in interest alone — for a total repayment near <b>MWK ${Math.round(totalCost).toLocaleString()}</b>. Your actual bank rate will likely be higher, since banks add their own margin on top of the Policy Rate.`;
+  }
+
   loadToolsData();
 </script>
 </body>
 </html>
-
