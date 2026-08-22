@@ -204,5 +204,20 @@
       "link": "https://www.rbm.mw",
       "date": "2026-08-15"
     }
-  ]
+  ],
+  "masiIndex": [],
+  "listedStocks": [],
+  "mpcMeetings": [
+    {
+      "date": "2026-08-15",
+      "decision": "Held",
+      "changeBps": null,
+      "reason": "RBM kept the Policy Rate unchanged, citing continued disinflation through mid-2026.",
+      "source": "RBM MPC Statement, Aug 2026",
+      "link": "https://www.rbm.mw"
+    }
+  ],
+  "mpcNext": {
+    "nextMeetingDate": ""
+  }
 }
