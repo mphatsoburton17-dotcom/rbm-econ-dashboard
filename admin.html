@@ -281,8 +281,12 @@
       </table>
       <div class="adm-row" style="margin-top:12px;">
         <div class="adm-field"><label>Month</label><input id="resMonth" placeholder="2026-08"></div>
-        <div class="adm-field"><label>Amount (USD)</label><input type="number" id="resAmount" placeholder="480000000"></div>
+        <div class="adm-field"><label>Reserves Amount (USD)</label><input type="number" id="resAmount" placeholder="480000000"></div>
         <div class="adm-field"><label>Source</label><input id="resSource" placeholder="RBM Reserves Report"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Monthly Import Bill (USD)</label><input type="number" id="resImportBill" placeholder="300000000"></div>
+        <div class="adm-field"><label>Import Bill Source</label><input id="resImportSource" placeholder="CEIC/NSO — recent monthly average"></div>
       </div>
       <button class="adm-btn" onclick="saveReserves()">Save Entry</button>
       <div id="reservesMsg"></div>
@@ -667,7 +671,9 @@
   }
   async function saveReserves() {
     const body = { month: document.getElementById('resMonth').value, amountUSD: parseFloat(document.getElementById('resAmount').value),
-      source: document.getElementById('resSource').value };
+      source: document.getElementById('resSource').value,
+      monthlyImportBillUSD: parseFloat(document.getElementById('resImportBill').value) || null,
+      importBillSource: document.getElementById('resImportSource').value };
     const res = await fetch('/api/admin/reserves', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
     document.getElementById('reservesMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
     loadReserves();
