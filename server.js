@@ -16,7 +16,7 @@ db.defaults({
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
   yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
   exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: [],
-  masiIndex: [], listedStocks: [], mpcMeetings: [], mpcNext: {}
+  masiIndex: [], listedStocks: [], mpcMeetings: [], mpcNext: {}, regionalData: []
 }).write();
 
 const app = express();
@@ -396,6 +396,30 @@ app.get('/api/mpc-next', (req, res) => {
 app.post('/api/admin/mpc-next', requireAdmin, (req, res) => {
   const { nextMeetingDate } = req.body;
   db.set('mpcNext', { nextMeetingDate }).write();
+  res.json({ ok: true });
+});
+
+// ================= REGIONAL COMPARATOR =================
+
+app.get('/api/regional', (req, res) => {
+  res.json(db.get('regionalData').value() || []);
+});
+
+app.post('/api/admin/regional', requireAdmin, (req, res) => {
+  const { country, headlineInflation, policyRate, asOf, source } = req.body;
+  if (!country) return res.status(400).json({ error: 'country is required.' });
+  const existing = db.get('regionalData').find({ country }).value();
+  const entry = { country, headlineInflation, policyRate, asOf, source };
+  if (existing) {
+    db.get('regionalData').find({ country }).assign(entry).write();
+  } else {
+    db.get('regionalData').push(entry).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/regional/:country', requireAdmin, (req, res) => {
+  db.get('regionalData').remove({ country: req.params.country }).write();
   res.json({ ok: true });
 });
 
