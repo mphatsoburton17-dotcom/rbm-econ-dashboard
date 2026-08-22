@@ -99,6 +99,7 @@
     <button class="tool-tab" data-tool="reserves" onclick="switchTool('reserves', this)">Reserves Cover</button>
     <button class="tool-tab" data-tool="tbills" onclick="switchTool('tbills', this)">Treasury Bills</button>
     <button class="tool-tab" data-tool="mpc" onclick="switchTool('mpc', this)">MPC Tracker</button>
+    <button class="tool-tab" data-tool="regional" onclick="switchTool('regional', this)">Regional Comparator</button>
   </div>
 
   <div class="tool-panel active" id="panel-fx">
@@ -227,6 +228,20 @@
       <div class="desc">A timeline of past Monetary Policy Committee decisions, so you can see the pattern behind the current rate — not just the number itself.</div>
       <div id="mpcNextHeadline" style="font-family:'Fraunces'; font-size:18px; font-weight:800; color:#8F6620; margin:14px 0 16px;"></div>
       <div id="mpcTimeline"></div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-regional">
+    <div class="section-title"><span>Regional Comparator</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>Is Malawi's inflation story local or regional?</h3>
+      <div class="desc">Compares Malawi's headline inflation and policy rate against regional peers, so you can see whether Malawi's situation is unusual or part of a wider pattern.</div>
+      <div id="regionalTakeaway" style="font-family:'Fraunces'; font-size:17px; font-weight:800; color:#8F6620; margin:14px 0 16px; line-height:1.4;"></div>
+      <table class="data-table">
+        <thead><tr><th>Country</th><th>Headline Inflation</th><th>Policy Rate</th><th>As Of</th></tr></thead>
+        <tbody id="regionalTable"></tbody>
+      </table>
+      <div class="tool-note" id="regionalSources"></div>
     </div>
   </div>
 
@@ -378,6 +393,58 @@
       }
     } catch (e) {
       document.getElementById('mpcTimeline').innerHTML = '<div style="color:#9a8f74; font-size:13px;">Unable to load meeting data.</div>';
+    }
+
+    try {
+      const regional = await fetch('/api/regional').then(r => r.json());
+      const tableBody = document.getElementById('regionalTable');
+      const takeawayEl = document.getElementById('regionalTakeaway');
+      const sourcesEl = document.getElementById('regionalSources');
+      tableBody.innerHTML = '';
+
+      if (!Array.isArray(regional) || !regional.length) {
+        takeawayEl.textContent = 'No regional data has been entered yet.';
+        sourcesEl.textContent = '';
+      } else {
+        const malawi = regional.find(r => r.country && r.country.toLowerCase() === 'malawi');
+        const peers = regional.filter(r => !(r.country && r.country.toLowerCase() === 'malawi'));
+
+        regional.forEach(r => {
+          const tr = document.createElement('tr');
+          const isMalawi = r.country && r.country.toLowerCase() === 'malawi';
+          tr.innerHTML = `<td${isMalawi ? ' style="font-weight:700;"' : ''}>${r.country}</td><td class="num">${r.headlineInflation != null ? r.headlineInflation + '%' : '—'}</td><td class="num">${r.policyRate != null ? r.policyRate + '%' : '—'}</td><td style="font-size:11px;color:#9a8f74;">${r.asOf || '—'}</td>`;
+          tableBody.appendChild(tr);
+        });
+
+        if (malawi && peers.length && malawi.headlineInflation != null) {
+          const peerInflations = peers.filter(p => p.headlineInflation != null).map(p => p.headlineInflation);
+          if (peerInflations.length) {
+            const peerAvg = peerInflations.reduce((a, b) => a + b, 0) / peerInflations.length;
+            const diff = malawi.headlineInflation - peerAvg;
+            let verdict;
+            if (Math.abs(diff) < 2) {
+              verdict = `Malawi's headline inflation (${malawi.headlineInflation}%) is broadly in line with the regional average (${peerAvg.toFixed(1)}%) — this looks like a shared regional pattern, not just a local story.`;
+            } else if (diff > 0) {
+              verdict = `Malawi's headline inflation (${malawi.headlineInflation}%) is running well above the regional average (${peerAvg.toFixed(1)}%) — this points to domestic pressures on top of any regional trend.`;
+            } else {
+              verdict = `Malawi's headline inflation (${malawi.headlineInflation}%) is running well below the regional average (${peerAvg.toFixed(1)}%).`;
+            }
+            takeawayEl.textContent = verdict;
+          } else {
+            takeawayEl.textContent = '';
+          }
+        } else {
+          takeawayEl.textContent = '';
+        }
+
+        const sourceLines = regional
+          .filter(r => r.source)
+          .map(r => `${r.country}: ${r.source}`)
+          .join(' · ');
+        sourcesEl.textContent = sourceLines ? 'Sources — ' + sourceLines : '';
+      }
+    } catch (e) {
+      document.getElementById('regionalTakeaway').textContent = 'Unable to load regional data.';
     }
   }
 
