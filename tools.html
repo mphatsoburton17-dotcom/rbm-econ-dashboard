@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financial Tools — Malawi Economic Indicators</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="style.css">
 <style>
   .nav-more { position: relative; display: inline-block; }
@@ -146,6 +147,16 @@
     <div class="calc-result" id="loanResult">Enter a loan amount and term and press Estimate.</div>
   </div>
 
+  <div class="section-title"><span>Reserves Cover Calculator</span> <span class="tag">Real, sourced values</span></div>
+  <div class="panel">
+    <h3>How many months of imports could Malawi's reserves cover?</h3>
+    <div class="desc">This shows how many months Malawi could keep paying for imports using only its foreign currency reserves, if no new foreign currency came in. Economists often treat 3 months as a rough safety threshold — below that is generally considered risky.</div>
+    <div id="reservesCoverHeadline" style="font-family:'Fraunces'; font-size:32px; font-weight:900; color:#8F6620; margin:14px 0 6px;">Loading…</div>
+    <div id="reservesCoverDetail" style="font-size:12.5px; color:#9a8f74; margin-bottom:16px;"></div>
+    <div class="chart-box small"><canvas id="reservesCoverChart"></canvas></div>
+    <div class="tool-note" id="reservesCoverSources"></div>
+  </div>
+
   <div class="section-title"><span>Treasury Bill Comparison</span> <span class="tag">Real, sourced values</span></div>
   <div class="panel">
     <h3>Which tenor pays more?</h3>
@@ -216,6 +227,51 @@
         body.appendChild(tr);
       });
     } catch (e) {}
+
+    try {
+      const reserves = await fetch('/api/reserves').then(r => r.json());
+      if (Array.isArray(reserves) && reserves.length) {
+        const latest = reserves[reserves.length - 1];
+        const monthsCover = (latest.monthlyImportBillUSD && latest.monthlyImportBillUSD > 0)
+          ? latest.amountUSD / latest.monthlyImportBillUSD
+          : null;
+
+        if (monthsCover !== null) {
+          document.getElementById('reservesCoverHeadline').textContent = monthsCover.toFixed(1) + ' months of import cover';
+          document.getElementById('reservesCoverDetail').textContent =
+            `Reserves: $${(latest.amountUSD / 1e6).toFixed(0)}M ÷ Monthly import bill: $${(latest.monthlyImportBillUSD / 1e6).toFixed(0)}M — as of ${latest.month}`;
+        } else {
+          document.getElementById('reservesCoverHeadline').textContent = 'Not yet available';
+          document.getElementById('reservesCoverDetail').textContent = 'Monthly import bill figure not yet entered for this month.';
+        }
+
+        document.getElementById('reservesCoverSources').textContent =
+          `Sources: ${latest.source || 'RBM'} (reserves); ${latest.importBillSource || 'CEIC/NSO'} (import bill)`;
+
+        const coverSeries = reserves
+          .filter(r => r.monthlyImportBillUSD && r.monthlyImportBillUSD > 0)
+          .map(r => ({ month: r.month, cover: r.amountUSD / r.monthlyImportBillUSD }));
+
+        if (coverSeries.length) {
+          new Chart(document.getElementById('reservesCoverChart'), {
+            type: 'line',
+            data: {
+              labels: coverSeries.map(r => r.month),
+              datasets: [{ label: 'Months of import cover', data: coverSeries.map(r => r.cover), borderColor: '#B8862B', backgroundColor: 'rgba(184,134,43,0.08)', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3 }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + ' mo' } }, x: { grid: { display: false } } }
+            }
+          });
+        }
+      } else {
+        document.getElementById('reservesCoverHeadline').textContent = 'No data yet';
+      }
+    } catch (e) {
+      document.getElementById('reservesCoverHeadline').textContent = 'Unavailable';
+    }
   }
 
   function toMwk(amount, currency) {
