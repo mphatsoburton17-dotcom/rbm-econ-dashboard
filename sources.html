@@ -6,6 +6,26 @@
 <title>Sources — Malawi Economic Indicators</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+  .nav-more { position: relative; display: inline-block; }
+  .nav-more-btn {
+    font: inherit; cursor: pointer; border-radius: 999px;
+    padding: 10px 16px; border: 1px solid rgba(0,0,0,0.12);
+    background: transparent; color: inherit; font-weight: 700;
+    letter-spacing: 0.04em; line-height: 1; font-size: 16px;
+  }
+  .nav-more-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 12px 28px rgba(43,32,10,0.18);
+    min-width: 168px; padding: 6px; z-index: 40;
+  }
+  .nav-more-panel.open { display: block; }
+  .nav-more-panel a {
+    display: block; padding: 10px 12px; border-radius: 8px;
+    color: #4a3c1f; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-more-panel a:hover { background: #F1EAD8; }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -21,9 +41,16 @@
       </div>
       <div class="hero-nav">
         <a class="navbtn" href="index.html">Dashboard</a>
-        <a class="navbtn" href="learn.html">Learn</a>
-        <a class="navbtn" href="about.html">About</a>
-        <a class="navbtn active" href="sources.html">Sources</a>
+        <a class="navbtn" href="tools.html">Tools</a>
+        <div class="nav-more">
+          <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
+          <div class="nav-more-panel" id="navMorePanel">
+            <a href="learn.html">Learn</a>
+            <a href="news.html">News</a>
+            <a href="about.html">About</a>
+            <a href="sources.html">Sources</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -49,5 +76,18 @@
   </div>
 
 </div>
+<script>
+  function toggleNavMore(btn) {
+    const panel = document.getElementById("navMorePanel");
+    const isOpen = panel.classList.toggle("open");
+    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
+  document.addEventListener("click", function(e) {
+    const wrap = document.querySelector(".nav-more");
+    const panel = document.getElementById("navMorePanel");
+    if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove("open");
+  });
+</script>
 </body>
 </html>
+
