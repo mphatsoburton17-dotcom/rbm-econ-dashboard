@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Market — Malawi Economic Indicators</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<style>
+  .nav-more { position: relative; display: inline-block; }
+  .nav-more-btn {
+    font: inherit; cursor: pointer; border-radius: 999px;
+    padding: 10px 16px; border: 1px solid rgba(0,0,0,0.12);
+    background: transparent; color: inherit; font-weight: 700;
+    letter-spacing: 0.04em; line-height: 1;
+  }
+  .nav-more-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 12px 28px rgba(43,32,10,0.18);
+    min-width: 168px; padding: 6px; z-index: 40;
+  }
+  .nav-more-panel.open { display: block; }
+  .nav-more-panel a {
+    display: block; padding: 10px 12px; border-radius: 8px;
+    color: #4a3c1f; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-more-panel a:hover { background: #F1EAD8; }
+
+  .stock-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px; background: #FAF6EC; border-radius: 10px; margin-bottom: 8px; font-size: 13.5px;
+  }
+  .stock-row .ticker { font-weight: 800; color: var(--gold-deep); font-family:'Fraunces'; font-size: 14px; min-width: 64px; }
+  .stock-row .name { color: #6b5c33; flex: 1; padding: 0 10px; }
+  .stock-row .price { font-family:'Fraunces'; font-weight:800; font-size: 15px; }
+  .stock-row .change { font-size: 12px; font-weight: 700; min-width: 56px; text-align: right; }
+  .stock-row .change.up { color: var(--red); }
+  .stock-row .change.down { color: var(--green); }
+  .stock-row .change.flat { color: #9a8f74; }
+
+  .link-callout {
+    background: #FBF3E3; border: 1px solid #E7D19F; border-radius: 14px;
+    padding: 18px 20px; margin: 18px 0; font-size: 13.5px; color: #6b5c33; line-height: 1.6;
+  }
+  .link-callout b { color: var(--gold-deep); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="banner">
+    <b>Independent prototype</b> — built from the Reserve Bank of Malawi's own published releases and Malawi Stock Exchange trading summaries. Not affiliated with or endorsed by RBM or the MSE. Every figure below is manually entered and sourced — see the <a href="sources.html">Sources page</a>.
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title">Stock Market</div>
+          <div class="hero-sub">A plain-language guide to the Malawi Stock Exchange, and how it connects to the numbers on this site.</div>
+        </div>
+      </div>
+      <div class="hero-nav">
+        <a class="navbtn" href="index.html">Dashboard</a>
+        <a class="navbtn" href="tools.html">Tools</a>
+      </div>
+    </div>
+  </div>
+  <div class="nav-more">
+    <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
+    <div class="nav-more-panel" id="navMorePanel">
+      <a href="learn.html">Learn</a>
+      <a href="news.html">News</a>
+      <a href="about.html">About</a>
+      <a href="stocks.html">Stock Market</a>
+      <a href="sources.html">Sources</a>
+    </div>
+  </div>
+
+  <div class="section-title"><span>What is the Stock Market?</span></div>
+
+  <div class="learn-card">
+    <h4>What is a share?</h4>
+    <p>When a company sells "shares," it's selling small pieces of ownership in itself to raise money. If you buy a share of a company, you own a tiny slice of it — and if the company does well, your slice is usually worth more. If it does poorly, it can be worth less.</p>
+  </div>
+
+  <div class="learn-card">
+    <h4>What is the Malawi Stock Exchange (MSE)?</h4>
+    <p>The MSE is where shares of Malawi's publicly listed companies are bought and sold — companies like Airtel Malawi, National Bank of Malawi, FDH Bank, and Illovo Sugar. It's regulated by the Reserve Bank of Malawi's Registrar of Financial Institutions, under the Securities Act of 2010, which requires listed companies to publicly disclose accurate financial information so investors can make informed decisions.</p>
+  </div>
+
+  <div class="learn-card">
+    <h4>What is the MASI?</h4>
+    <p>The Malawi All Share Index (MASI) is a single number that tracks the overall performance of every company listed on the MSE. When people say "the market went up" or "the market went down," they usually mean the MASI moved. It's a quick way to see the market's overall direction without checking every company individually.</p>
+  </div>
+
+  <div class="learn-card">
+    <h4>How would someone actually buy shares in Malawi?</h4>
+    <p>You can't buy shares directly from the exchange — you go through a licensed stockbroker, who buys and sells on your behalf. Licensed brokers operate in Blantyre, Lilongwe, and other cities, and some now offer accounts that can be opened without visiting in person. A broker can walk you through opening an account, minimum amounts, and fees before you commit any money.</p>
+  </div>
+
+  <div class="link-callout">
+    <b>How this connects to the rest of this site:</b> the Policy Rate and inflation figures on the Dashboard directly influence the stock market. A higher Policy Rate makes borrowing more expensive for companies and makes safer options like Treasury Bills more attractive than stocks. High inflation erodes the real value of company profits and investor returns. When you see the MASI fall during a period of high inflation and a high Policy Rate, these are usually connected, not a coincidence.
+  </div>
+
+  <div class="section-title"><span>Malawi All Share Index (MASI)</span> <span class="tag" id="masiAsOf">Loading…</span></div>
+  <div class="panel">
+    <h3 id="masiHeadline">Loading…</h3>
+    <div class="desc" id="masiDetail"></div>
+    <div class="chart-box"><canvas id="masiChart"></canvas></div>
+    <div class="tool-note" id="masiSource" style="font-size:12px;color:#9a8f74;margin-top:10px;"></div>
+  </div>
+
+  <div class="section-title"><span>Listed Companies</span> <span class="tag">Real, sourced values</span></div>
+  <div class="panel">
+    <h3>Current prices</h3>
+    <div class="desc">Latest manually-recorded price per listed company. Updated when new MSE trading summaries are published.</div>
+    <div id="stocksList"></div>
+    <div id="stocksEmpty" style="display:none; text-align:center; padding:24px; color:#9a8f74; font-size:13.5px;">No company data has been entered yet — check back soon.</div>
+  </div>
+
+  <div class="disclaimer-box">
+    This page is for education only, not investment advice. Prices and index values are manually recorded from MSE's published trading summaries and may lag real-time trading. Always confirm current prices with a licensed stockbroker before making any investment decision. This project is not affiliated with or endorsed by the Malawi Stock Exchange or the Reserve Bank of Malawi.
+  </div>
+
+  <div class="footer">
+    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases and MSE published trading summaries. Not affiliated with or endorsed by RBM or the MSE.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
+
+</div>
+
+<script>
+  function toggleNavMore(btn) {
+    const panel = document.getElementById('navMorePanel');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.nav-more');
+    const panel = document.getElementById('navMorePanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
+  });
+
+  async function loadMasi() {
+    try {
+      const data = await fetch('/api/masi').then(r => r.json());
+      if (!Array.isArray(data) || !data.length) {
+        document.getElementById('masiHeadline').textContent = 'No index data yet';
+        document.getElementById('masiAsOf').textContent = 'Not yet published';
+        return;
+      }
+      const latest = data[data.length - 1];
+      document.getElementById('masiAsOf').textContent = 'As of ' + latest.date;
+      document.getElementById('masiHeadline').textContent = 'MASI: ' + Number(latest.value).toLocaleString();
+
+      const weekly = latest.weeklyChangePct;
+      const ytd = latest.ytdChangePct;
+      let detailParts = [];
+      if (weekly !== undefined && weekly !== null) detailParts.push(`1-week change: ${weekly > 0 ? '+' : ''}${weekly}%`);
+      if (ytd !== undefined && ytd !== null) detailParts.push(`Year-to-date: ${ytd > 0 ? '+' : ''}${ytd}%`);
+      document.getElementById('masiDetail').textContent = detailParts.join(' · ');
+
+      document.getElementById('masiSource').textContent = latest.source ? `Source: ${latest.source}` : '';
+
+      new Chart(document.getElementById('masiChart'), {
+        type: 'line',
+        data: {
+          labels: data.map(d => d.date),
+          datasets: [{
+            label: 'MASI', data: data.map(d => d.value),
+            borderColor: '#B8862B', backgroundColor: 'rgba(184,134,43,0.08)',
+            fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { grid: { color: '#F1EAD8' } }, x: { grid: { display: false } } }
+        }
+      });
+    } catch (e) {
+      document.getElementById('masiHeadline').textContent = 'Unavailable';
+    }
+  }
+
+  async function loadStocks() {
+    try {
+      const stocks = await fetch('/api/stocks').then(r => r.json());
+      const list = document.getElementById('stocksList');
+      const empty = document.getElementById('stocksEmpty');
+      if (!Array.isArray(stocks) || !stocks.length) {
+        empty.style.display = 'block';
+        return;
+      }
+      list.innerHTML = '';
+      stocks.forEach(s => {
+        const chg = s.changePct;
+        const chgClass = chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat';
+        const chgText = chg === undefined || chg === null ? '—' : `${chg > 0 ? '+' : ''}${chg}%`;
+        const row = document.createElement('div');
+        row.className = 'stock-row';
+        row.innerHTML = `
+          <div class="ticker">${s.ticker}</div>
+          <div class="name">${s.name}</div>
+          <div class="price">MWK ${Number(s.price).toLocaleString()}</div>
+          <div class="change ${chgClass}">${chgText}</div>
+        `;
+        list.appendChild(row);
+      });
+    } catch (e) {}
+  }
+
+  loadMasi();
+  loadStocks();
+</script>
+</body>
+</html>
+
