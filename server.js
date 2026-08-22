@@ -15,7 +15,8 @@ const db = low(adapter);
 db.defaults({
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
   yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
-  exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: []
+  exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: [],
+  masiIndex: [], listedStocks: []
 }).write();
 
 const app = express();
@@ -286,6 +287,60 @@ app.post('/api/admin/reserves', requireAdmin, (req, res) => {
 
 app.delete('/api/admin/reserves/:month', requireAdmin, (req, res) => {
   db.get('foreignReserves').remove({ month: req.params.month }).write();
+  res.json({ ok: true });
+});
+
+
+// ================= STOCK MARKET (Malawi Stock Exchange) =================
+// Manually entered, same pattern as reserves/tbills — MSE's own data terms
+// restrict automated republishing, so figures are entered by hand each update
+// and always carry a source citation (e.g. "MSE daily trading summary, 22 Aug 2026").
+
+// ---- MASI (Malawi All Share Index) history ----
+app.get('/api/masi', (req, res) => {
+  res.json(db.get('masiIndex').sortBy('date').value());
+});
+
+app.post('/api/admin/masi', requireAdmin, (req, res) => {
+  const { date, value, weeklyChangePct, ytdChangePct, source } = req.body;
+  if (!date || value === undefined) return res.status(400).json({ error: 'date and value are required' });
+  const existing = db.get('masiIndex').find({ date }).value();
+  const entry = { date, value, weeklyChangePct, ytdChangePct, source };
+  if (existing) {
+    db.get('masiIndex').find({ date }).assign(entry).write();
+  } else {
+    db.get('masiIndex').push(entry).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/masi/:date', requireAdmin, (req, res) => {
+  db.get('masiIndex').remove({ date: req.params.date }).write();
+  res.json({ ok: true });
+});
+
+// ---- Individual listed companies (current snapshot, one row per ticker) ----
+app.get('/api/stocks', (req, res) => {
+  res.json(db.get('listedStocks').value());
+});
+
+app.post('/api/admin/stocks', requireAdmin, (req, res) => {
+  const { ticker, name, price, changePct, date, source } = req.body;
+  if (!ticker || !name || price === undefined) {
+    return res.status(400).json({ error: 'ticker, name, and price are required' });
+  }
+  const existing = db.get('listedStocks').find({ ticker }).value();
+  const entry = { ticker, name, price, changePct, date, source };
+  if (existing) {
+    db.get('listedStocks').find({ ticker }).assign(entry).write();
+  } else {
+    db.get('listedStocks').push(entry).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/stocks/:ticker', requireAdmin, (req, res) => {
+  db.get('listedStocks').remove({ ticker: req.params.ticker }).write();
   res.json({ ok: true });
 });
 
