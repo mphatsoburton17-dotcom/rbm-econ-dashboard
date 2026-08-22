@@ -41,6 +41,21 @@
   .verdict.good { background: #E6F4EA; color: #2E8B45; }
   .verdict.bad { background: #FBE9E9; color: #C43D3D; }
   select.tool-select { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,0.15); font-family:'Inter'; font-size:14px; }
+
+  /* ---- Horizontal tool tabs ---- */
+  .tool-tabs {
+    display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 4px 2px 12px; margin: 18px 0 4px; scrollbar-width: none;
+  }
+  .tool-tabs::-webkit-scrollbar { display: none; }
+  .tool-tab {
+    flex: 0 0 auto; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border);
+    background: #fff; color: #6b5c33; font-weight: 700; font-size: 13px; cursor: pointer;
+    white-space: nowrap; font-family: 'Inter';
+  }
+  .tool-tab.active { background: var(--gold-deep); border-color: var(--gold-deep); color: #fff; }
+  .tool-panel { display: none; }
+  .tool-panel.active { display: block; }
 </style>
 </head>
 <body>
@@ -62,106 +77,127 @@
       <div class="hero-nav">
         <a class="navbtn" href="index.html">Dashboard</a>
         <a class="navbtn active" href="tools.html">Tools</a>
-        <div class="nav-more">
-          <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
-          <div class="nav-more-panel" id="navMorePanel">
-            <a href="learn.html">Learn</a>
-            <a href="news.html">News</a>
-            <a href="about.html">About</a>
-            <a href="sources.html">Sources</a>
-          </div>
+      </div>
+    </div>
+    <div class="nav-more">
+      <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
+      <div class="nav-more-panel" id="navMorePanel">
+        <a href="learn.html">Learn</a>
+        <a href="news.html">News</a>
+        <a href="about.html">About</a>
+        <a href="sources.html">Sources</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tool-tabs" id="toolTabs">
+    <button class="tool-tab active" data-tool="fx" onclick="switchTool('fx', this)">Currency Converter</button>
+    <button class="tool-tab" data-tool="inflation" onclick="switchTool('inflation', this)">Inflation Impact</button>
+    <button class="tool-tab" data-tool="savings" onclick="switchTool('savings', this)">Savings vs Inflation</button>
+    <button class="tool-tab" data-tool="loan" onclick="switchTool('loan', this)">Loan Cost</button>
+    <button class="tool-tab" data-tool="reserves" onclick="switchTool('reserves', this)">Reserves Cover</button>
+    <button class="tool-tab" data-tool="tbills" onclick="switchTool('tbills', this)">Treasury Bills</button>
+  </div>
+
+  <div class="tool-panel active" id="panel-fx">
+    <div class="section-title"><span>Currency Converter</span> <span class="tag" id="fxAsOf">Loading rate…</span></div>
+    <div class="calc">
+      <h3>Convert MWK ↔ USD / GBP / ZAR</h3>
+      <div class="desc">Uses the most recently published exchange rate.</div>
+      <div class="calc-row" style="align-items:flex-end;">
+        <div class="calc-field">
+          <label>Amount</label>
+          <input type="number" id="fxAmount" value="100000">
+        </div>
+        <div class="calc-field">
+          <label>From</label>
+          <select id="fxFrom" class="tool-select">
+            <option value="MWK">MWK</option>
+            <option value="USD">USD</option>
+            <option value="GBP">GBP</option>
+            <option value="ZAR">ZAR</option>
+          </select>
+        </div>
+        <button class="swap-btn" onclick="swapFx()" title="Swap">⇄</button>
+        <div class="calc-field">
+          <label>To</label>
+          <select id="fxTo" class="tool-select">
+            <option value="USD">USD</option>
+            <option value="MWK">MWK</option>
+            <option value="GBP">GBP</option>
+            <option value="ZAR">ZAR</option>
+          </select>
         </div>
       </div>
+      <button onclick="runConvert()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Convert</button>
+      <div class="calc-result" id="fxResult">Enter an amount and press Convert.</div>
+      <div class="tool-note">This is the interbank rate. Street/forex bureau rates may differ.</div>
     </div>
   </div>
 
-  <div class="section-title"><span>Currency Converter</span> <span class="tag" id="fxAsOf">Loading rate…</span></div>
-  <div class="calc">
-    <h3>Convert MWK ↔ USD / GBP / ZAR</h3>
-    <div class="desc">Uses the most recently published exchange rate.</div>
-    <div class="calc-row" style="align-items:flex-end;">
-      <div class="calc-field">
-        <label>Amount</label>
-        <input type="number" id="fxAmount" value="100000">
+  <div class="tool-panel" id="panel-inflation">
+    <div class="section-title"><span>Inflation Impact Calculator</span> <span class="tag">Tool</span></div>
+    <div class="calc">
+      <h3>What will your money be worth?</h3>
+      <div class="desc">See how current inflation affects the real value of money over time.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
+        <div class="calc-field"><label>Over how many years</label><input type="number" id="calcYears" value="1"></div>
+        <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
       </div>
-      <div class="calc-field">
-        <label>From</label>
-        <select id="fxFrom" class="tool-select">
-          <option value="MWK">MWK</option>
-          <option value="USD">USD</option>
-          <option value="GBP">GBP</option>
-          <option value="ZAR">ZAR</option>
-        </select>
+      <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
+      <div class="tool-note">A future update will show this as a real-world comparison (e.g. "X fewer bags of maize") once staple-price data from NSO's consumer basket is available.</div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-savings">
+    <div class="section-title"><span>Savings vs. Inflation Checker</span> <span class="tag">Tool</span></div>
+    <div class="calc">
+      <h3>Is your savings interest beating inflation?</h3>
+      <div class="desc">Compares the interest rate your savings earn against the current inflation rate, in real MWK terms.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>Amount saved (MWK)</label><input type="number" id="savAmount" value="50000"></div>
+        <div class="calc-field"><label>Your savings interest rate (% per year)</label><input type="number" step="0.1" id="savRate" value="8"></div>
+        <button onclick="runSavingsCheck()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Check</button>
       </div>
-      <button class="swap-btn" onclick="swapFx()" title="Swap">⇄</button>
-      <div class="calc-field">
-        <label>To</label>
-        <select id="fxTo" class="tool-select">
-          <option value="USD">USD</option>
-          <option value="MWK">MWK</option>
-          <option value="GBP">GBP</option>
-          <option value="ZAR">ZAR</option>
-        </select>
+      <div class="calc-result" id="savResult">Enter an amount and your savings rate, then press Check.</div>
+      <div id="savVerdict"></div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-loan">
+    <div class="section-title"><span>Loan Cost Estimator</span> <span class="tag">Tool</span></div>
+    <div class="calc">
+      <h3>Roughly what would a loan cost?</h3>
+      <div class="desc">Based on RBM's current Policy Rate only — your bank will add its own margin on top, so treat this as a starting point, not a quote.</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>Loan amount (MWK)</label><input type="number" id="loanAmount" value="1000000"></div>
+        <div class="calc-field"><label>Term (years)</label><input type="number" id="loanYears" value="1"></div>
+        <button onclick="runLoanEstimate()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Estimate</button>
       </div>
+      <div class="calc-result" id="loanResult">Enter a loan amount and term and press Estimate.</div>
     </div>
-    <button onclick="runConvert()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Convert</button>
-    <div class="calc-result" id="fxResult">Enter an amount and press Convert.</div>
-    <div class="tool-note">This is the interbank rate. Street/forex bureau rates may differ.</div>
   </div>
 
-  <div class="section-title"><span>Inflation Impact Calculator</span> <span class="tag">Tool</span></div>
-  <div class="calc">
-    <h3>What will your money be worth?</h3>
-    <div class="desc">See how current inflation affects the real value of money over time.</div>
-    <div class="calc-row">
-      <div class="calc-field"><label>Amount (MWK)</label><input type="number" id="calcAmount" value="50000"></div>
-      <div class="calc-field"><label>Over how many years</label><input type="number" id="calcYears" value="1"></div>
-      <button onclick="runCalc()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Calculate</button>
+  <div class="tool-panel" id="panel-reserves">
+    <div class="section-title"><span>Reserves Cover Calculator</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>How many months of imports could Malawi's reserves cover?</h3>
+      <div class="desc">This shows how many months Malawi could keep paying for imports using only its foreign currency reserves, if no new foreign currency came in. Economists often treat 3 months as a rough safety threshold — below that is generally considered risky.</div>
+      <div id="reservesCoverHeadline" style="font-family:'Fraunces'; font-size:32px; font-weight:900; color:#8F6620; margin:14px 0 6px;">Loading…</div>
+      <div id="reservesCoverDetail" style="font-size:12.5px; color:#9a8f74; margin-bottom:16px;"></div>
+      <div class="chart-box small"><canvas id="reservesCoverChart"></canvas></div>
+      <div class="tool-note" id="reservesCoverSources"></div>
     </div>
-    <div class="calc-result" id="calcResult">Enter an amount and press Calculate.</div>
-    <div class="tool-note">A future update will show this as a real-world comparison (e.g. "X fewer bags of maize") once staple-price data from NSO's consumer basket is available.</div>
   </div>
 
-  <div class="section-title"><span>Savings vs. Inflation Checker</span> <span class="tag">Tool</span></div>
-  <div class="calc">
-    <h3>Is your savings interest beating inflation?</h3>
-    <div class="desc">Compares the interest rate your savings earn against the current inflation rate, in real MWK terms.</div>
-    <div class="calc-row">
-      <div class="calc-field"><label>Amount saved (MWK)</label><input type="number" id="savAmount" value="50000"></div>
-      <div class="calc-field"><label>Your savings interest rate (% per year)</label><input type="number" step="0.1" id="savRate" value="8"></div>
-      <button onclick="runSavingsCheck()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Check</button>
+  <div class="tool-panel" id="panel-tbills">
+    <div class="section-title"><span>Treasury Bill Comparison</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>Which tenor pays more?</h3>
+      <div class="desc">Latest published RBM Treasury Bill auction yields, by tenor.</div>
+      <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Auction Date</th></tr></thead><tbody id="tbillCompareTable"></tbody></table>
     </div>
-    <div class="calc-result" id="savResult">Enter an amount and your savings rate, then press Check.</div>
-    <div id="savVerdict"></div>
-  </div>
-
-  <div class="section-title"><span>Loan Cost Estimator</span> <span class="tag">Tool</span></div>
-  <div class="calc">
-    <h3>Roughly what would a loan cost?</h3>
-    <div class="desc">Based on RBM's current Policy Rate only — your bank will add its own margin on top, so treat this as a starting point, not a quote.</div>
-    <div class="calc-row">
-      <div class="calc-field"><label>Loan amount (MWK)</label><input type="number" id="loanAmount" value="1000000"></div>
-      <div class="calc-field"><label>Term (years)</label><input type="number" id="loanYears" value="1"></div>
-      <button onclick="runLoanEstimate()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer;">Estimate</button>
-    </div>
-    <div class="calc-result" id="loanResult">Enter a loan amount and term and press Estimate.</div>
-  </div>
-
-  <div class="section-title"><span>Reserves Cover Calculator</span> <span class="tag">Real, sourced values</span></div>
-  <div class="panel">
-    <h3>How many months of imports could Malawi's reserves cover?</h3>
-    <div class="desc">This shows how many months Malawi could keep paying for imports using only its foreign currency reserves, if no new foreign currency came in. Economists often treat 3 months as a rough safety threshold — below that is generally considered risky.</div>
-    <div id="reservesCoverHeadline" style="font-family:'Fraunces'; font-size:32px; font-weight:900; color:#8F6620; margin:14px 0 6px;">Loading…</div>
-    <div id="reservesCoverDetail" style="font-size:12.5px; color:#9a8f74; margin-bottom:16px;"></div>
-    <div class="chart-box small"><canvas id="reservesCoverChart"></canvas></div>
-    <div class="tool-note" id="reservesCoverSources"></div>
-  </div>
-
-  <div class="section-title"><span>Treasury Bill Comparison</span> <span class="tag">Real, sourced values</span></div>
-  <div class="panel">
-    <h3>Which tenor pays more?</h3>
-    <div class="desc">Latest published RBM Treasury Bill auction yields, by tenor.</div>
-    <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Auction Date</th></tr></thead><tbody id="tbillCompareTable"></tbody></table>
   </div>
 
   <div class="disclaimer-box">
@@ -186,6 +222,14 @@
     const panel = document.getElementById('navMorePanel');
     if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
   });
+
+  function switchTool(id, btn) {
+    document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
 
   let CURRENT_HEADLINE_RATE = 0.208;
   let CURRENT_POLICY_RATE = 0.24;
