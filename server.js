@@ -16,7 +16,7 @@ db.defaults({
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
   yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
   exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: [],
-  masiIndex: [], listedStocks: []
+  masiIndex: [], listedStocks: [], mpcMeetings: [], mpcNext: {}
 }).write();
 
 const app = express();
@@ -363,6 +363,39 @@ app.delete('/api/admin/news/:index', requireAdmin, (req, res) => {
   const rows = db.get('news').value() || [];
   rows.splice(idx, 1);
   db.set('news', rows).write();
+  res.json({ ok: true });
+});
+
+// ================= MPC MEETING TRACKER =================
+
+app.get('/api/mpc', (req, res) => {
+  res.json(db.get('mpcMeetings').sortBy('date').value());
+});
+
+app.post('/api/admin/mpc', requireAdmin, (req, res) => {
+  const { date, decision, changeBps, reason, source, link } = req.body;
+  if (!date || !decision || !reason) {
+    return res.status(400).json({ error: 'date, decision, and reason are required.' });
+  }
+  db.get('mpcMeetings').push({ date, decision, changeBps, reason, source, link }).write();
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/mpc/:index', requireAdmin, (req, res) => {
+  const idx = parseInt(req.params.index, 10);
+  const rows = db.get('mpcMeetings').value();
+  rows.splice(idx, 1);
+  db.set('mpcMeetings', rows).write();
+  res.json({ ok: true });
+});
+
+app.get('/api/mpc-next', (req, res) => {
+  res.json(db.get('mpcNext').value() || {});
+});
+
+app.post('/api/admin/mpc-next', requireAdmin, (req, res) => {
+  const { nextMeetingDate } = req.body;
+  db.set('mpcNext', { nextMeetingDate }).write();
   res.json({ ok: true });
 });
 
