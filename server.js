@@ -423,6 +423,56 @@ app.delete('/api/admin/regional/:country', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ================= AI FAQ ASSISTANT (Gemini) =================
+
+app.post('/api/faq-ask', async (req, res) => {
+  const { question } = req.body;
+  if (!question) return res.status(400).json({ error: 'question is required' });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({ ok: false, error: 'AI not configured' });
+  }
+
+  try {
+    const entries = db.get('entries').sortBy('month').value();
+    const latest = entries[entries.length - 1] || {};
+    const policyRates = db.get('policyRates').value();
+    const growthOutlook = db.get('growthOutlook').value();
+
+    const systemPrompt = `You are a friendly assistant on an independent Malawi economic data dashboard (not affiliated with RBM). Answer visitor questions about inflation, interest rates, and the economy simply and briefly — 2-4 sentences max. Use only the data below; if asked something outside it, say you're not sure and suggest the Learn page. Never claim to be RBM or an official source.
+
+Current data:
+- Latest headline inflation: ${latest.headline ?? 'unknown'}% (${latest.label ?? ''})
+- Food inflation: ${latest.food ?? 'unknown'}%
+- Non-food inflation: ${latest.nonFood ?? 'unknown'}%
+- Policy Rate: ${policyRates?.policyRate ?? 'unknown'}%
+- 2026 Growth Projection: ${growthOutlook?.projection2026 ?? 'unknown'}%`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: question }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: { maxOutputTokens: 300 }
+        })
+      }
+    );
+
+    const data = await response.json();
+    const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!answer) throw new Error('No answer returned from Gemini');
+
+    db.get('faqLog').push({ question, answeredByBot: true, aiPowered: true, timestamp: new Date().toISOString() }).write();
+    res.json({ ok: true, answer });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Malawi Economic Indicators server running on port ${PORT}`);
