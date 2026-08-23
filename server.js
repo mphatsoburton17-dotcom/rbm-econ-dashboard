@@ -7,7 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
+const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
 
 // ---- Email alerts (optional — only active if EMAIL_USER/EMAIL_PASS/EMAIL_TO are set) ----
@@ -33,15 +33,53 @@ async function sendAlertEmail(subject, htmlBody) {
   }
 }
 
-const adapter = new FileSync(path.join(__dirname, 'db.json'));
-const db = low(adapter);
+// ---- Persistent storage: Postgres instead of a local file ----
+// Render's free tier wipes local files on every sleep/restart/deploy, so all
+// data is stored as a single JSON document in Postgres instead. This keeps
+// the exact same lowdb API (db.get(...).push(...).write(), etc.) that every
+// route below already uses — only this storage layer changes.
 
-db.defaults({
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+const DEFAULTS = {
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
   yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
   exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: [],
   masiIndex: [], listedStocks: [], mpcMeetings: [], mpcNext: {}, regionalData: []
-}).write();
+};
+
+class PostgresAdapter {
+  constructor(initialData) {
+    this.data = initialData;
+  }
+  read() {
+    return this.data;
+  }
+  write(data) {
+    this.data = data;
+    // Fire-and-forget save — doesn't block the request, but persists for real.
+    pool.query(
+      `INSERT INTO app_data (id, data) VALUES (1, $1)
+       ON CONFLICT (id) DO UPDATE SET data = $1`,
+      [JSON.stringify(data)]
+    ).catch(err => console.error('Database write failed:', err.message));
+  }
+}
+
+let db; // assigned once the database is ready, below
+
+async function initDb() {
+  await pool.query(`CREATE TABLE IF NOT EXISTS app_data (id INT PRIMARY KEY, data JSONB)`);
+  const result = await pool.query('SELECT data FROM app_data WHERE id = 1');
+  const initialData = result.rows[0] ? result.rows[0].data : DEFAULTS;
+  const adapter = new PostgresAdapter(initialData);
+  const instance = low(adapter);
+  instance.defaults(DEFAULTS).write(); // fills in any new keys without erasing existing data
+  return instance;
+}
 
 const app = express();
 app.use(cors());
@@ -578,6 +616,16 @@ Current data:
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Malawi Economic Indicators server running on port ${PORT}`);
-});
+
+(async () => {
+  try {
+    db = await initDb();
+    app.listen(PORT, () => {
+      console.log(`Malawi Economic Indicators server running on port ${PORT}`);
+      console.log('Connected to persistent Postgres database — data will survive restarts and deploys.');
+    });
+  } catch (err) {
+    console.error('Failed to start server — database connection error:', err.message);
+    process.exit(1);
+  }
+})();
