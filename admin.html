@@ -298,7 +298,9 @@
     <!-- 14. NEWS -->
     <div class="adm-section" id="tab-news">
       <h3>News & Announcements</h3>
-      <div class="sub">Paste in RBM's headline, a short summary, and the link — shows up on the public News page instantly.</div>
+      <div class="sub">Paste in RBM's headline, a short summary, and the link — shows up on the public News page instantly. Or use "Fetch Latest Economic News Now" to automatically pull recent Malawi economic headlines from Google News.</div>
+      <button class="adm-btn secondary" onclick="fetchLatestNews()">Fetch Latest Economic News Now</button>
+      <div id="newsFetchMsg"></div>
       <table class="adm-table">
         <thead><tr><th>Date</th><th>Title</th><th></th></tr></thead>
         <tbody id="newsBody"></tbody>
@@ -751,7 +753,7 @@
     body.innerHTML = '';
     rows.forEach((r, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.date}</td><td>${r.title}</td>
+      tr.innerHTML = `<td>${r.date}</td><td>${r.title}${r.auto ? ' <span style="font-size:10px;color:#9a8f74;">(auto)</span>' : ''}</td>
         <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteNews(${i})">Delete</button></td>`;
       body.appendChild(tr);
     });
@@ -765,6 +767,14 @@
   }
   async function deleteNews(i) {
     await fetch('/api/admin/news/' + i, { method: 'DELETE', headers: authHeaders() });
+    loadNews();
+  }
+  async function fetchLatestNews() {
+    document.getElementById('newsFetchMsg').innerHTML = '<div class="adm-msg ok">Fetching...</div>';
+    const res = await fetch('/api/fetch-news').then(r => r.json());
+    document.getElementById('newsFetchMsg').innerHTML = res.ok
+      ? `<div class="adm-msg ok">Added ${res.added} new item(s) (checked ${res.checked}).</div>`
+      : `<div class="adm-msg err">${res.error}</div>`;
     loadNews();
   }
 
