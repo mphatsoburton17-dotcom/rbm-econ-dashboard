@@ -1,5 +1,5 @@
-// Simple, free, rule-based assistant — no external AI API, no cost.
-// Matches keywords in the visitor's question to a small knowledge base.
+// Simple, free, rule-based assistant — used as a fallback if the AI assistant
+// (Gemini, via /api/faq-ask) is unavailable or the API key isn't configured.
 
 const FAQ = [
   { keys: ['inflation', 'what is inflation'], a: "Inflation shows how much more expensive things are now compared to a year ago. If inflation is 20%, something that cost MK1,000 last year now costs about MK1,200." },
@@ -43,12 +43,35 @@ function initFaqBot() {
     messages.scrollTop = messages.scrollHeight;
   }
 
-  function handleSend() {
+  async function handleSend() {
     const q = input.value.trim();
     if (!q) return;
     addMessage(q, 'user');
     input.value = '';
-    setTimeout(() => addMessage(findAnswer(q), 'bot'), 300);
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'faq-msg bot';
+    loadingDiv.textContent = 'Thinking…';
+    messages.appendChild(loadingDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const res = await fetch('/api/faq-ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+      loadingDiv.remove();
+      if (data.ok && data.answer) {
+        addMessage(data.answer, 'bot');
+      } else {
+        addMessage(findAnswer(q), 'bot'); // fallback to rule-based
+      }
+    } catch (e) {
+      loadingDiv.remove();
+      addMessage(findAnswer(q), 'bot'); // fallback to rule-based
+    }
   }
 
   sendBtn.addEventListener('click', handleSend);
