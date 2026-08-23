@@ -56,6 +56,17 @@
   .tool-tab.active { background: var(--gold-deep); border-color: var(--gold-deep); color: #fff; }
   .tool-panel { display: none; }
   .tool-panel.active { display: block; }
+
+  /* ---- Pass-through stat boxes ---- */
+  .pt-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .pt-stat-box {
+    flex: 1; min-width: 140px; background: #FAF6EC; border-radius: 12px;
+    padding: 14px 16px; border: 1px solid #ECE4D2;
+  }
+  .pt-stat-box .pt-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #7a6f52; letter-spacing: 0.02em; }
+  .pt-stat-box .pt-value { font-family: 'Fraunces'; font-size: 24px; font-weight: 800; color: #8F6620; margin-top: 4px; }
+  .pt-stat-box .pt-value.gap { color: #C43D3D; }
+  .pt-stat-box .pt-sub { font-size: 11.5px; color: #9a8f74; margin-top: 4px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -187,15 +198,18 @@
     <div class="calc">
       <h3>How much of a price rise could be the exchange rate?</h3>
       <div class="desc">If you import goods or inputs, this shows how much of a price change since you last paid could plausibly be explained by MWK depreciation against the USD, using this site's exchange rate data. It is an illustration of the FX effect only — not a forecast, and not the same as your actual cost.</div>
+      <div class="tool-note" id="ptRangeHint" style="margin-top:0; margin-bottom:14px;">Loading exchange rate history…</div>
       <div class="calc-row">
         <div class="calc-field"><label>What you paid then (MWK)</label><input type="number" id="ptPriceThen" value="500000"></div>
         <div class="calc-field"><label>How many months ago</label><input type="number" id="ptMonthsAgo" value="6"></div>
       </div>
       <div class="calc-row" style="margin-top:10px;">
-        <div class="calc-field"><label>What you'd pay for it now (optional, MWK)</label><input type="number" id="ptPriceNow" placeholder="Leave blank if unsure"></div>
+        <div class="calc-field"><label>What you'd pay for it now (optional, MWK)</label><input type="number" id="ptPriceNow" placeholder="e.g. 650000 — leave blank if unsure"></div>
       </div>
       <button onclick="runPassThrough()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Estimate</button>
-      <div class="calc-result" id="ptResult">Enter what you paid and how long ago, then press Estimate.</div>
+      <div id="ptResult">
+        <div class="calc-result">Enter what you paid and how long ago, then press Estimate.</div>
+      </div>
       <div class="tool-note">This tool only isolates the currency effect. Actual import prices are also driven by supplier costs, customs duties, shipping, and local demand — this estimate does not account for those.</div>
     </div>
   </div>
@@ -320,8 +334,20 @@
       } else {
         document.getElementById('fxAsOf').textContent = 'No rate published yet';
       }
+
+      // Pass-through data-range hint
+      const rangeHintEl = document.getElementById('ptRangeHint');
+      if (Array.isArray(rates) && rates.length >= 2) {
+        const sorted = rates.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+        rangeHintEl.textContent = `Using exchange rate data from ${sorted[0].date} to ${sorted[sorted.length - 1].date}.`;
+      } else if (Array.isArray(rates) && rates.length === 1) {
+        rangeHintEl.textContent = `Only one exchange rate on file (${rates[0].date}) — not enough history yet for a trend estimate.`;
+      } else {
+        rangeHintEl.textContent = 'No exchange rate history available yet.';
+      }
     } catch (e) {
       document.getElementById('fxAsOf').textContent = 'Rate unavailable';
+      document.getElementById('ptRangeHint').textContent = 'Unable to load exchange rate history.';
     }
 
     try {
@@ -616,18 +642,18 @@
     const priceNow = priceNowInput !== '' ? parseFloat(priceNowInput) : null;
 
     if (!priceThen || priceThen <= 0 || !monthsAgo || monthsAgo <= 0) {
-      resultEl.textContent = 'Enter a valid price and a number of months greater than 0.';
+      resultEl.innerHTML = `<div class="calc-result">Enter a valid price and a number of months greater than 0.</div>`;
       return;
     }
 
     if (!FX_HISTORY || FX_HISTORY.length === 0) {
-      resultEl.textContent = 'No exchange rate data has been published yet, so this estimate is not available. Check back once a rate is added.';
+      resultEl.innerHTML = `<div class="calc-result">No exchange rate data has been published yet, so this estimate is not available. Check back once a rate is added.</div>`;
       return;
     }
 
     if (FX_HISTORY.length === 1) {
       const only = FX_HISTORY[0];
-      resultEl.innerHTML = `Only one exchange rate is on file so far (<b>${only.usd.toLocaleString()} MWK/USD</b>, as of ${only.date}, source: ${only.source || 'unknown'}). There isn't enough history yet to estimate how the rate has moved over the past ${monthsAgo} month${monthsAgo == 1 ? '' : 's'}. As more monthly rates are added, this tool will be able to show the estimate automatically.`;
+      resultEl.innerHTML = `<div class="calc-result">Only one exchange rate is on file so far (<b>${only.usd.toLocaleString()} MWK/USD</b>, as of ${only.date}, source: ${only.source || 'unknown'}). There isn't enough history yet to estimate how the rate has moved over the past ${monthsAgo} month${monthsAgo == 1 ? '' : 's'}. As more monthly rates are added, this tool will be able to show the estimate automatically.</div>`;
       return;
     }
 
@@ -649,7 +675,7 @@
     });
 
     if (closest.date === current.date) {
-      resultEl.innerHTML = `The only historical exchange rate on file close to ${monthsAgo} month${monthsAgo == 1 ? '' : 's'} ago is the same as the current rate (${current.date}), so there isn't enough separation in the data yet to estimate a change over this period. As more monthly rates are added, this tool will improve.`;
+      resultEl.innerHTML = `<div class="calc-result">The only historical exchange rate on file close to ${monthsAgo} month${monthsAgo == 1 ? '' : 's'} ago is the same as the current rate (${current.date}), so there isn't enough separation in the data yet to estimate a change over this period. As more monthly rates are added, this tool will improve.</div>`;
       return;
     }
 
@@ -657,21 +683,45 @@
     const fxImpliedPrice = priceThen * (current.usd / closest.usd);
     const daysOff = Math.round(closestDiff / (1000 * 60 * 60 * 24));
     const approxNote = daysOff > 20
-      ? ` (closest available rate on file to that date is from ${closest.date}, about ${Math.round(daysOff / 30)} month${Math.round(daysOff / 30) == 1 ? '' : 's'} off from what you asked for)`
+      ? ` (closest rate on file to that date is ${closest.date}, about ${Math.round(daysOff / 30)} month${Math.round(daysOff / 30) == 1 ? '' : 's'} off from what you asked for)`
       : '';
 
-    let html = `Over this period (from <b>${closest.date}</b> to <b>${current.date}</b>${approxNote}), the MWK ${depreciationPct >= 0 ? 'depreciated' : 'appreciated'} by <b>${Math.abs(depreciationPct).toFixed(1)}%</b> against the USD (source: ${closest.source || 'unknown'} → ${current.source || 'unknown'}). This is one factor that can push imported costs up by a similar magnitude — it is not the only one.<br><br>` +
-      `If your item's price had moved purely in line with this currency shift, it would now cost roughly <b>MWK ${Math.round(fxImpliedPrice).toLocaleString()}</b> — up from the MWK ${priceThen.toLocaleString()} you paid before.`;
+    // ---- Build stat boxes ----
+    let statsHtml = `
+      <div class="pt-stats">
+        <div class="pt-stat-box">
+          <div class="pt-label">MWK Depreciation</div>
+          <div class="pt-value">${depreciationPct >= 0 ? '+' : ''}${depreciationPct.toFixed(1)}%</div>
+          <div class="pt-sub">${closest.date} → ${current.date}${approxNote}</div>
+        </div>
+        <div class="pt-stat-box">
+          <div class="pt-label">FX-Implied Price Now</div>
+          <div class="pt-value">MWK ${Math.round(fxImpliedPrice).toLocaleString()}</div>
+          <div class="pt-sub">If price moved purely with the exchange rate</div>
+        </div>
+      </div>`;
 
     if (priceNow !== null && priceNow > 0) {
       const actualChangePct = ((priceNow - priceThen) / priceThen) * 100;
       const gap = actualChangePct - depreciationPct;
-      html += `<br><br>Your actual price went from MWK ${priceThen.toLocaleString()} to MWK ${priceNow.toLocaleString()} — a <b>${actualChangePct.toFixed(1)}%</b> increase, compared to an FX-implied increase of <b>${depreciationPct.toFixed(1)}%</b>. The ${Math.abs(gap).toFixed(1)} percentage point gap likely reflects other factors — supplier pricing, customs duties, shipping costs, or local demand — rather than currency movement alone.`;
+      statsHtml += `
+      <div class="pt-stats">
+        <div class="pt-stat-box">
+          <div class="pt-label">Your Actual Change</div>
+          <div class="pt-value">${actualChangePct >= 0 ? '+' : ''}${actualChangePct.toFixed(1)}%</div>
+          <div class="pt-sub">MWK ${priceThen.toLocaleString()} → MWK ${priceNow.toLocaleString()}</div>
+        </div>
+        <div class="pt-stat-box">
+          <div class="pt-label">Gap vs. FX Effect</div>
+          <div class="pt-value gap">${gap >= 0 ? '+' : ''}${gap.toFixed(1)}pp</div>
+          <div class="pt-sub">Likely supplier pricing, duties, shipping, or demand — not currency alone</div>
+        </div>
+      </div>`;
     }
 
-    html += `<br><br><span style="font-size:12px;color:#9a8f74;">This is an illustration of the currency effect only, based on the two nearest exchange rate points on file. It is not a precise forecast of any specific item's price.</span>`;
+    statsHtml += `<div class="tool-note" style="margin-top:14px;">Source: ${closest.source || 'unknown'} (${closest.date}) → ${current.source || 'unknown'} (${current.date}). This is an illustration of the currency effect only, based on the two nearest exchange rate points on file — not a precise forecast of any specific item's price.</div>`;
 
-    resultEl.innerHTML = html;
+    resultEl.innerHTML = statsHtml;
   }
 
   function runLoanEstimate() {
