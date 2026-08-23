@@ -215,9 +215,25 @@
   <div class="tool-panel" id="panel-tbills">
     <div class="section-title"><span>Treasury Bill Comparison</span> <span class="tag">Real, sourced values</span></div>
     <div class="panel">
-      <h3>Which tenor pays more?</h3>
-      <div class="desc">Latest published RBM Treasury Bill auction yields, by tenor.</div>
-      <table class="data-table"><thead><tr><th>Tenor</th><th>Yield</th><th>Auction Date</th></tr></thead><tbody id="tbillCompareTable"></tbody></table>
+      <h3>Which tenor pays more — and is it worth it?</h3>
+      <div class="desc">Latest published RBM Treasury Bill auction yields, compared against current inflation to show what you're actually earning after prices rise.</div>
+
+      <div id="tbillVerdict" style="font-size:14.5px; font-weight:700; color:#8F6620; background:#FBF0DA; padding:12px 16px; border-radius:10px; margin:14px 0 4px;"></div>
+
+      <table class="data-table" style="margin-top:14px;">
+        <thead><tr><th>Tenor</th><th>Nominal Yield</th><th>Real Yield*</th><th>Auction Date</th></tr></thead>
+        <tbody id="tbillCompareTable"></tbody>
+      </table>
+      <div class="tool-note">*Real Yield = Nominal Yield − current headline inflation. This is what you actually earn in buying-power terms, not just the sticker rate.</div>
+
+      <div id="tbillWhyMatters" style="font-size:13px; color:#6b5f45; background:#FAF6EC; padding:12px 16px; border-radius:10px; margin-top:16px; line-height:1.5;"></div>
+
+      <div class="chart-box small" style="margin-top:20px;"><canvas id="tbillTrendChart"></canvas></div>
+      <div class="tool-note" id="tbillTrendNote"></div>
+
+      <div style="margin-top:18px; padding:14px 16px; background:#F1EAD8; border-radius:10px; font-size:12.5px; color:#4a3c1f; line-height:1.6;">
+        <b>How to actually buy one:</b> Treasury Bills are bought through RBM at auction, usually via a commercial bank or licensed dealer acting on your behalf. The minimum bid is typically MWK 10,000, in multiples of MWK 1,000 above that. Ask your bank about their T-bill purchase process for the exact current minimum and any fees.
+      </div>
     </div>
   </div>
 
@@ -310,13 +326,7 @@
 
     try {
       const tbills = await fetch('/api/tbills').then(r => r.json());
-      const body = document.getElementById('tbillCompareTable');
-      body.innerHTML = '';
-      tbills.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${t.tenor}</td><td class="num">${t.yield}%</td><td style="font-size:11px;color:#9a8f74;">${t.date}</td>`;
-        body.appendChild(tr);
-      });
+      renderTbillAnalysis(tbills);
     } catch (e) {}
 
     try {
@@ -448,6 +458,99 @@
     }
   }
 
+  let tbillTrendChartInstance = null;
+
+  function renderTbillAnalysis(tbills) {
+    const tableBody = document.getElementById('tbillCompareTable');
+    const verdictEl = document.getElementById('tbillVerdict');
+    const whyEl = document.getElementById('tbillWhyMatters');
+    const trendNoteEl = document.getElementById('tbillTrendNote');
+
+    if (!Array.isArray(tbills) || !tbills.length) {
+      tableBody.innerHTML = '';
+      verdictEl.textContent = 'No Treasury Bill data has been entered yet.';
+      whyEl.textContent = '';
+      trendNoteEl.textContent = '';
+      return;
+    }
+
+    const inflationRate = CURRENT_HEADLINE_RATE * 100; // e.g. 20.8
+
+    // Latest auction date across all entries
+    const latestDate = tbills.reduce((max, t) => (t.date > max ? t.date : max), tbills[0].date);
+    const latestAuction = tbills.filter(t => t.date === latestDate);
+
+    // ---- Table with nominal + real yield ----
+    tableBody.innerHTML = '';
+    latestAuction
+      .slice()
+      .sort((a, b) => a.yield - b.yield)
+      .forEach(t => {
+        const realYield = +(t.yield - inflationRate).toFixed(1);
+        const realColor = realYield >= 0 ? '#2E8B45' : '#C43D3D';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.tenor}</td><td class="num">${t.yield}%</td><td class="num" style="color:${realColor};">${realYield > 0 ? '+' : ''}${realYield}%</td><td style="font-size:11px;color:#9a8f74;">${t.date}</td>`;
+        tableBody.appendChild(tr);
+      });
+
+    // ---- Verdict line ----
+    if (latestAuction.length >= 2) {
+      const sorted = latestAuction.slice().sort((a, b) => b.yield - a.yield);
+      const best = sorted[0];
+      const worst = sorted[sorted.length - 1];
+      const diff = +(best.yield - worst.yield).toFixed(1);
+      verdictEl.textContent = `The ${best.tenor} bill currently pays the most at ${best.yield}% — ${diff}pp more than the ${worst.tenor}.`;
+    } else if (latestAuction.length === 1) {
+      verdictEl.textContent = `The ${latestAuction[0].tenor} bill is currently paying ${latestAuction[0].yield}%.`;
+    }
+
+    // ---- Why this matters + real yield framing ----
+    const allNegativeReal = latestAuction.every(t => (t.yield - inflationRate) < 0);
+    const realYieldNote = allNegativeReal
+      ? `Right now, every tenor has a negative real yield — even the best Treasury Bill is losing to inflation (currently ${inflationRate.toFixed(1)}%). That doesn't make T-bills a bad option — they're still one of the safest places to put money — but it means they're not currently growing your money's real buying power.`
+      : `Some tenors currently offer a positive real yield above inflation (${inflationRate.toFixed(1)}%), meaning your money's buying power actually grows, not just its face value.`;
+    whyEl.innerHTML = `<b>Why this matters:</b> A higher yield means the government pays more to borrow — cheaper financing costs for the country's budget when yields are low, more expensive when they're high. ${realYieldNote}`;
+
+    // ---- Trend chart across auction dates ----
+    const byDate = {};
+    tbills.forEach(t => {
+      if (!byDate[t.date]) byDate[t.date] = {};
+      byDate[t.date][t.tenor] = t.yield;
+    });
+    const dates = Object.keys(byDate).sort();
+    const tenors = [...new Set(tbills.map(t => t.tenor))];
+
+    if (dates.length >= 2) {
+      const colors = { '91-day': '#B8862B', '182-day': '#8F6620', '364-day': '#C43D3D' };
+      const datasets = tenors.map(tenor => ({
+        label: tenor,
+        data: dates.map(d => byDate[d][tenor] ?? null),
+        borderColor: colors[tenor] || '#8F6620',
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        borderWidth: 2.5,
+        pointRadius: 3,
+        spanGaps: true
+      }));
+
+      if (tbillTrendChartInstance) {
+        tbillTrendChartInstance.destroy();
+      }
+      tbillTrendChartInstance = new Chart(document.getElementById('tbillTrendChart'), {
+        type: 'line',
+        data: { labels: dates, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+          scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => v + '%' } }, x: { grid: { display: false } } }
+        }
+      });
+      trendNoteEl.textContent = `Yield trend across ${dates.length} auction dates on file.`;
+    } else {
+      trendNoteEl.textContent = 'Add at least one more auction date in the admin panel to see a trend chart here.';
+    }
+  }
+
   function toMwk(amount, currency) {
     if (currency === 'MWK') return amount;
     const rate = FX_RATES && FX_RATES[currency.toLowerCase()];
@@ -528,7 +631,6 @@
       return;
     }
 
-    // Sort ascending by date, just in case
     const sorted = FX_HISTORY.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
     const current = sorted[sorted.length - 1];
 
@@ -536,7 +638,6 @@
     const targetDate = new Date(today);
     targetDate.setMonth(targetDate.getMonth() - monthsAgo);
 
-    // Find the entry closest to the target date
     let closest = sorted[0];
     let closestDiff = Math.abs(new Date(sorted[0].date) - targetDate);
     sorted.forEach(entry => {
@@ -580,7 +681,6 @@
     const totalCost = amt * Math.pow(1 + rate, yrs);
     const interest = totalCost - amt;
 
-    // Simple amortized monthly payment estimate
     const monthlyRate = rate / 12;
     const numMonths = yrs * 12;
     const monthlyPayment = monthlyRate > 0 && numMonths > 0
