@@ -395,7 +395,7 @@ app.delete('/api/admin/news/:index', requireAdmin, (req, res) => {
 // same pattern as /api/fetch-exchange-rate. New matching stories are added,
 // duplicates (matched by link) are skipped.
 
-const NEWS_QUERY = 'Malawi economy OR Malawi inflation OR "Reserve Bank of Malawi" OR Malawi kwacha OR Malawi treasury bill OR Malawi budget';
+const NEWS_QUERY = 'Malawi economy OR Malawi inflation OR "Reserve Bank of Malawi" OR Malawi kwacha OR Malawi treasury bill OR Malawi budget when:2d';
 
 function parseRssItems(xml) {
   const clean = s => (s || '').replace('<![CDATA[', '').replace(']]>', '').trim();
@@ -411,7 +411,7 @@ app.get('/api/fetch-news', async (req, res) => {
   try {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(NEWS_QUERY)}&hl=en-MW&gl=MW&ceid=MW:en`;
     const xml = await fetch(url).then(r => r.text());
-    const items = parseRssItems(xml).slice(0, 15);
+    const items = parseRssItems(xml).slice(0, 30);
 
     const existing = db.get('news').value() || [];
     const existingLinks = new Set(existing.map(n => n.link));
@@ -447,6 +447,7 @@ app.get('/api/fetch-news', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 // ================= MPC MEETING TRACKER =================
 
