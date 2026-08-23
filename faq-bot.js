@@ -1,5 +1,9 @@
 // Simple, free, rule-based assistant — used as a fallback if the AI assistant
 // (Gemini, via /api/faq-ask) is unavailable or the API key isn't configured.
+//
+// DEBUG MODE: errors from /api/faq-ask are shown directly in the chat with a
+// [DEBUG] prefix so they're easy to screenshot. Remove this prefix once the
+// AI integration is confirmed working (see the two spots marked below).
 
 const FAQ = [
   { keys: ['inflation', 'what is inflation'], a: "Inflation shows how much more expensive things are now compared to a year ago. If inflation is 20%, something that cost MK1,000 last year now costs about MK1,200." },
@@ -66,11 +70,15 @@ function initFaqBot() {
       if (data.ok && data.answer) {
         addMessage(data.answer, 'bot');
       } else {
-        addMessage(findAnswer(q), 'bot'); // fallback to rule-based
+        // DEBUG: shows the server's error message directly in the chat.
+        // Once confirmed working, change this line back to: addMessage(findAnswer(q), 'bot');
+        addMessage('[DEBUG] ' + (data.error || 'unknown error') + ' — ' + findAnswer(q), 'bot');
       }
     } catch (e) {
       loadingDiv.remove();
-      addMessage(findAnswer(q), 'bot'); // fallback to rule-based
+      // DEBUG: shows the fetch failure directly in the chat.
+      // Once confirmed working, change this line back to: addMessage(findAnswer(q), 'bot');
+      addMessage('[DEBUG] fetch failed: ' + e.message, 'bot');
     }
   }
 
