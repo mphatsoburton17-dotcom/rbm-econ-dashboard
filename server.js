@@ -8,6 +8,30 @@ const cors = require('cors');
 const path = require('path');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
+const nodemailer = require('nodemailer');
+
+// ---- Email alerts (optional — only active if EMAIL_USER/EMAIL_PASS/EMAIL_TO are set) ----
+let mailer = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.EMAIL_TO) {
+  mailer = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+  });
+}
+
+async function sendAlertEmail(subject, htmlBody) {
+  if (!mailer) return; // not configured — silently skip
+  try {
+    await mailer.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_TO,
+      subject,
+      html: htmlBody
+    });
+  } catch (err) {
+    console.error('Email send failed:', err.message);
+  }
+}
 
 const adapter = new FileSync(path.join(__dirname, 'db.json'));
 const db = low(adapter);
@@ -392,18 +416,31 @@ app.get('/api/fetch-news', async (req, res) => {
     const existing = db.get('news').value() || [];
     const existingLinks = new Set(existing.map(n => n.link));
     let added = 0;
+    const newlyAdded = [];
 
     items.forEach(item => {
       if (!item.link || existingLinks.has(item.link)) return;
-      db.get('news').push({
+      const entry = {
         title: item.title,
         summary: item.source ? `Via ${item.source}` : '',
         link: item.link,
         date: item.pubDate ? new Date(item.pubDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
         auto: true
-      }).write();
+      };
+      db.get('news').push(entry).write();
+      newlyAdded.push(entry);
       added++;
     });
+
+    if (newlyAdded.length > 0) {
+      const listHtml = newlyAdded.map(n =>
+        `<li><a href="${n.link}">${n.title}</a><br><small>${n.summary}</small></li>`
+      ).join('');
+      sendAlertEmail(
+        `${newlyAdded.length} new Malawi economic news item(s)`,
+        `<p>New stories were just added to your dashboard:</p><ul>${listHtml}</ul>`
+      );
+    }
 
     res.json({ ok: true, added, checked: items.length });
   } catch (err) {
