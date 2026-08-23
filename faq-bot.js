@@ -30,6 +30,7 @@ function initFaqBot() {
   const messages = document.getElementById('faqMessages');
   const input = document.getElementById('faqInput');
   const sendBtn = document.getElementById('faqSend');
+  const history = []; // { role: 'user' | 'bot', text: string }
 
   toggle.addEventListener('click', () => {
     panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
@@ -59,18 +60,26 @@ function initFaqBot() {
       const res = await fetch('/api/faq-ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q })
+        body: JSON.stringify({ question: q, history })
       });
       const data = await res.json();
       loadingDiv.remove();
       if (data.ok && data.answer) {
         addMessage(data.answer, 'bot');
+        history.push({ role: 'user', text: q });
+        history.push({ role: 'bot', text: data.answer });
       } else {
-        addMessage(findAnswer(q), 'bot');
+        const fallback = findAnswer(q);
+        addMessage(fallback, 'bot');
+        history.push({ role: 'user', text: q });
+        history.push({ role: 'bot', text: fallback });
       }
     } catch (e) {
       loadingDiv.remove();
-      addMessage(findAnswer(q), 'bot');
+      const fallback = findAnswer(q);
+      addMessage(fallback, 'bot');
+      history.push({ role: 'user', text: q });
+      history.push({ role: 'bot', text: fallback });
     }
   }
 
