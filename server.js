@@ -366,6 +366,51 @@ app.delete('/api/admin/news/:index', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// -- Auto-fetch economic news (Google News RSS, free, no API key needed) --
+// Call this from an external scheduler (e.g. cron-job.org) every few hours,
+// same pattern as /api/fetch-exchange-rate. New matching stories are added,
+// duplicates (matched by link) are skipped.
+
+const NEWS_QUERY = 'Malawi economy OR Malawi inflation OR "Reserve Bank of Malawi" OR Malawi kwacha OR Malawi treasury bill OR Malawi budget';
+
+function parseRssItems(xml) {
+  const clean = s => (s || '').replace('<![CDATA[', '').replace(']]>', '').trim();
+  return (xml.match(/<item>[\s\S]*?<\/item>/g) || []).map(block => ({
+    title: clean((block.match(/<title>([\s\S]*?)<\/title>/) || [])[1]),
+    link: clean((block.match(/<link>([\s\S]*?)<\/link>/) || [])[1]),
+    pubDate: clean((block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1]),
+    source: clean((block.match(/<source[^>]*>([\s\S]*?)<\/source>/) || [])[1])
+  }));
+}
+
+app.get('/api/fetch-news', async (req, res) => {
+  try {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(NEWS_QUERY)}&hl=en-MW&gl=MW&ceid=MW:en`;
+    const xml = await fetch(url).then(r => r.text());
+    const items = parseRssItems(xml).slice(0, 15);
+
+    const existing = db.get('news').value() || [];
+    const existingLinks = new Set(existing.map(n => n.link));
+    let added = 0;
+
+    items.forEach(item => {
+      if (!item.link || existingLinks.has(item.link)) return;
+      db.get('news').push({
+        title: item.title,
+        summary: item.source ? `Via ${item.source}` : '',
+        link: item.link,
+        date: item.pubDate ? new Date(item.pubDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+        auto: true
+      }).write();
+      added++;
+    });
+
+    res.json({ ok: true, added, checked: items.length });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ================= MPC MEETING TRACKER =================
 
 app.get('/api/mpc', (req, res) => {
