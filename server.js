@@ -450,7 +450,7 @@ Current data:
 - 2026 Growth Projection: ${growthOutlook?.projection2026 ?? 'unknown'}%`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -464,7 +464,11 @@ Current data:
 
     const data = await response.json();
     const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!answer) throw new Error('No answer returned from Gemini');
+
+    if (!answer) {
+      const debugInfo = data?.error?.message || JSON.stringify(data).slice(0, 300);
+      throw new Error(`status ${response.status} — ${debugInfo}`);
+    }
 
     db.get('faqLog').push({ question, answeredByBot: true, aiPowered: true, timestamp: new Date().toISOString() }).write();
     res.json({ ok: true, answer });
