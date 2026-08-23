@@ -426,7 +426,7 @@ app.delete('/api/admin/regional/:country', requireAdmin, (req, res) => {
 // ================= AI FAQ ASSISTANT (Gemini) =================
 
 app.post('/api/faq-ask', async (req, res) => {
-  const { question } = req.body;
+  const { question, history } = req.body;
   if (!question) return res.status(400).json({ error: 'question is required' });
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -440,7 +440,15 @@ app.post('/api/faq-ask', async (req, res) => {
     const policyRates = db.get('policyRates').value();
     const growthOutlook = db.get('growthOutlook').value();
 
-    const systemPrompt = `You are a friendly assistant on an independent Malawi economic data dashboard (not affiliated with RBM). Answer visitor questions about inflation, interest rates, and the economy simply and briefly — 2-4 sentences max. Use only the data below; if asked something outside it, say you're not sure and suggest the Learn page. Never claim to be RBM or an official source.
+    const systemPrompt = `You are a friendly, knowledgeable assistant on an independent Malawi economic data dashboard (not affiliated with RBM). Your job is to genuinely help visitors understand economic concepts and the current data — not just state a number.
+
+When answering:
+- Explain the concept in plain language a non-economist would understand, using a simple example where it helps (e.g. "if inflation is 20%, something that cost MK1,000 last year now costs about MK1,200").
+- Then connect it to the current figure from the data below and what it practically means for an ordinary person in Malawi.
+- Aim for 3-6 sentences — enough to actually explain, not just state a fact, but still easy to read in a small chat window.
+- If the visitor's question is vague (like "what does it mean?"), infer from the conversation what they're asking about and give a concrete, specific answer rather than a generic summary.
+- Use only the data below. If asked something outside it, say you're not sure and suggest the Learn page.
+- Never claim to be RBM or an official source.
 
 Current data:
 - Latest headline inflation: ${latest.headline ?? 'unknown'}% (${latest.label ?? ''})
@@ -449,15 +457,24 @@ Current data:
 - Policy Rate: ${policyRates?.policyRate ?? 'unknown'}%
 - 2026 Growth Projection: ${growthOutlook?.projection2026 ?? 'unknown'}%`;
 
+    // Build multi-turn context: prior turns (if any) followed by the current question.
+    const priorTurns = Array.isArray(history)
+      ? history
+          .filter(h => h && h.role && h.text)
+          .slice(-8) // last few turns is enough context, keeps requests small
+          .map(h => ({ role: h.role === 'bot' ? 'model' : 'user', parts: [{ text: h.text }] }))
+      : [];
+    const contents = [...priorTurns, { role: 'user', parts: [{ text: question }] }];
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: question }] }],
+          contents,
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { maxOutputTokens: 300 }
+          generationConfig: { maxOutputTokens: 500 }
         })
       }
     );
