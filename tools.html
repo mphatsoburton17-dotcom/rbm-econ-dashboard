@@ -113,6 +113,8 @@
     <button class="tool-tab" data-tool="tbills" onclick="switchTool('tbills', this)">Treasury Bills</button>
     <button class="tool-tab" data-tool="mpc" onclick="switchTool('mpc', this)">MPC Tracker</button>
     <button class="tool-tab" data-tool="regional" onclick="switchTool('regional', this)">Regional Comparator</button>
+    <button class="tool-tab" data-tool="forex" onclick="switchTool('forex', this)">Forex Earners Explorer</button>
+    <button class="tool-tab" data-tool="farmerprices" onclick="switchTool('farmerprices', this)">Farmer Price Trends</button>
   </div>
 
   <div class="tool-panel active" id="panel-fx">
@@ -277,6 +279,69 @@
     </div>
   </div>
 
+  <div class="tool-panel" id="panel-forex">
+    <div class="section-title"><span>Forex Earners Explorer</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>Follow one export category over time</h3>
+      <div class="desc">Pick a category to see its full year-by-year trend, not just the latest year.</div>
+      <div class="calc-row" style="align-items:flex-end;">
+        <div class="calc-field">
+          <label>Category</label>
+          <select id="forexCategorySelect" class="tool-select" onchange="renderForexCategoryTrend()"></select>
+        </div>
+      </div>
+      <div class="chart-box small" style="margin-top:16px;"><canvas id="forexCategoryChart"></canvas></div>
+      <div class="tool-note" id="forexCategoryNote"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h3>Compare two years</h3>
+      <div class="desc">See exactly how a category's earnings changed between any two years, in dollars and as a share of total forex.</div>
+      <div class="calc-row" style="align-items:flex-end;">
+        <div class="calc-field">
+          <label>Category</label>
+          <select id="forexCompareCategory" class="tool-select"></select>
+        </div>
+        <div class="calc-field">
+          <label>From year</label>
+          <select id="forexYearFrom" class="tool-select"></select>
+        </div>
+        <div class="calc-field">
+          <label>To year</label>
+          <select id="forexYearTo" class="tool-select"></select>
+        </div>
+      </div>
+      <button onclick="runForexCompare()" style="padding:10px 20px;border-radius:8px;border:none;background:#8F6620;color:#fff;font-weight:700;cursor:pointer; margin-top:14px;">Compare</button>
+      <div id="forexCompareResult">
+        <div class="calc-result">Pick a category and two years, then press Compare.</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h3>Why this matters</h3>
+      <div class="desc" id="forexWhyMatters" style="color:#6b5f45;">This is the foreign currency that ultimately funds the reserves shown on the dashboard and in the Reserves Cover tool above — when a major forex earner has a weak year, it shows up later as pressure on reserves and the exchange rate.</div>
+    </div>
+  </div>
+
+  <div class="tool-panel" id="panel-farmerprices">
+    <div class="section-title"><span>Farmer Price Trends</span> <span class="tag">Real, sourced values</span></div>
+    <div class="panel">
+      <h3>What crops actually paid, and how that's trended</h3>
+      <div class="desc">Average price per kg actually paid for major export crops, as published by RBM/NSO/Ministry of Agriculture — the real market picture, year over year.</div>
+      <div class="calc-row" style="align-items:flex-end;">
+        <div class="calc-field">
+          <label>Crop</label>
+          <select id="cropSelect" class="tool-select" onchange="renderCropTrend()"></select>
+        </div>
+      </div>
+      <div class="chart-box small" style="margin-top:16px;"><canvas id="cropPriceChart"></canvas></div>
+      <div class="tool-note" id="cropTrendNote"></div>
+      <div style="margin-top:18px; padding:14px 16px; background:#F1EAD8; border-radius:10px; font-size:12.5px; color:#4a3c1f; line-height:1.6;">
+        <b>What this tool doesn't do:</b> it shows what crops actually paid, not what you personally would earn. Turning that into a "type in your farm size, get your expected profit" calculator would need cost-of-production data — fertilizer, labor, land, yield per hectare — that varies enormously farm to farm and isn't something we can source reliably. Rather than guess those numbers and present them as fact, this tool sticks to real published prices so you can make your own informed decision.
+      </div>
+    </div>
+  </div>
+
   <div class="disclaimer-box">
     These tools use RBM's own published rates but are independent estimates, not financial advice. Loan cost figures are based on the current Policy Rate only — actual bank loans include their own added margin. Always confirm figures with your bank or a licensed advisor before making a financial decision.
   </div>
@@ -313,6 +378,8 @@
   let FX_RATES = null;
   let FX_RATE_DATE = null;
   let FX_HISTORY = [];
+  let FOREX_EARNERS = [];
+  let CROP_PRICES = [];
 
   async function loadToolsData() {
     try {
@@ -343,7 +410,7 @@
         const sorted = rates.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
         rangeHintEl.textContent = `Using exchange rate data from ${sorted[0].date} to ${sorted[sorted.length - 1].date}.`;
       } else if (Array.isArray(rates) && rates.length === 1) {
-        rangeHintEl.textContent = `Only one exchange rate on file (${rates[0].date}) — not enough history yet for a trend estimate.`;
+        rangeHintEl.textContent = `Only one exchange rate on file so far (${rates[0].date}) — not enough history yet for a trend estimate.`;
       } else {
         rangeHintEl.textContent = 'No exchange rate history available yet.';
       }
@@ -483,6 +550,181 @@
       }
     } catch (e) {
       document.getElementById('regionalTakeaway').textContent = 'Unable to load regional data.';
+    }
+
+    try {
+      FOREX_EARNERS = await fetch('/api/forex-earners').then(r => r.json());
+      setupForexExplorer();
+    } catch (e) {
+      document.getElementById('forexCategoryNote').textContent = 'Unable to load forex earnings data.';
+    }
+
+    try {
+      CROP_PRICES = await fetch('/api/crop-prices').then(r => r.json());
+      setupCropPriceTrends();
+    } catch (e) {
+      document.getElementById('cropTrendNote').textContent = 'Unable to load crop price data.';
+    }
+  }
+
+  // ---- Forex Earners Explorer ----
+  let forexCategoryChartInstance = null;
+
+  function setupForexExplorer() {
+    const categorySelect = document.getElementById('forexCategorySelect');
+    const compareCategory = document.getElementById('forexCompareCategory');
+    const yearFrom = document.getElementById('forexYearFrom');
+    const yearTo = document.getElementById('forexYearTo');
+
+    if (!Array.isArray(FOREX_EARNERS) || !FOREX_EARNERS.length) {
+      document.getElementById('forexCategoryNote').textContent = 'No forex earnings data has been entered yet.';
+      return;
+    }
+
+    const categories = [...new Set(FOREX_EARNERS.map(r => r.category))].sort();
+    const years = [...new Set(FOREX_EARNERS.map(r => r.year))].sort();
+
+    categorySelect.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    compareCategory.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    yearFrom.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    yearTo.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    if (years.length >= 2) {
+      yearFrom.value = years[0];
+      yearTo.value = years[years.length - 1];
+    }
+
+    renderForexCategoryTrend();
+  }
+
+  function renderForexCategoryTrend() {
+    const category = document.getElementById('forexCategorySelect').value;
+    const rows = FOREX_EARNERS.filter(r => r.category === category).sort((a, b) => a.year - b.year);
+    const noteEl = document.getElementById('forexCategoryNote');
+
+    if (!rows.length) {
+      noteEl.textContent = 'No data for this category yet.';
+      return;
+    }
+
+    if (forexCategoryChartInstance) forexCategoryChartInstance.destroy();
+    forexCategoryChartInstance = new Chart(document.getElementById('forexCategoryChart'), {
+      type: 'line',
+      data: {
+        labels: rows.map(r => r.year),
+        datasets: [{ label: category, data: rows.map(r => r.amountUSD), borderColor: '#8F6620', backgroundColor: 'rgba(143,102,32,0.08)', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => '$' + (v / 1e6).toFixed(0) + 'M' } }, x: { grid: { display: false } } }
+      }
+    });
+
+    if (rows.length >= 2) {
+      const first = rows[0], last = rows[rows.length - 1];
+      const changePct = ((last.amountUSD - first.amountUSD) / first.amountUSD) * 100;
+      noteEl.textContent = `${category} earnings moved from $${(first.amountUSD / 1e6).toFixed(0)}M in ${first.year} to $${(last.amountUSD / 1e6).toFixed(0)}M in ${last.year} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(0)}%).`;
+    } else {
+      noteEl.textContent = `Only one year on file for ${category} so far.`;
+    }
+  }
+
+  function runForexCompare() {
+    const category = document.getElementById('forexCompareCategory').value;
+    const y1 = parseInt(document.getElementById('forexYearFrom').value, 10);
+    const y2 = parseInt(document.getElementById('forexYearTo').value, 10);
+    const resultEl = document.getElementById('forexCompareResult');
+
+    if (!category || !y1 || !y2) {
+      resultEl.innerHTML = `<div class="calc-result">Pick a category and two years, then press Compare.</div>`;
+      return;
+    }
+    if (y1 === y2) {
+      resultEl.innerHTML = `<div class="calc-result">Pick two different years to compare.</div>`;
+      return;
+    }
+
+    const row1 = FOREX_EARNERS.find(r => r.category === category && r.year === y1);
+    const row2 = FOREX_EARNERS.find(r => r.category === category && r.year === y2);
+
+    if (!row1 || !row2) {
+      resultEl.innerHTML = `<div class="calc-result">Not enough data on file for ${category} in both ${y1} and ${y2}.</div>`;
+      return;
+    }
+
+    const total1 = FOREX_EARNERS.filter(r => r.year === y1).reduce((s, r) => s + r.amountUSD, 0);
+    const total2 = FOREX_EARNERS.filter(r => r.year === y2).reduce((s, r) => s + r.amountUSD, 0);
+    const pct1 = total1 > 0 ? (row1.amountUSD / total1) * 100 : null;
+    const pct2 = total2 > 0 ? (row2.amountUSD / total2) * 100 : null;
+    const dollarChange = row2.amountUSD - row1.amountUSD;
+    const dollarChangePct = (dollarChange / row1.amountUSD) * 100;
+
+    resultEl.innerHTML = `
+      <div class="pt-stats">
+        <div class="pt-stat-box">
+          <div class="pt-label">${y1}</div>
+          <div class="pt-value">$${(row1.amountUSD / 1e6).toFixed(0)}M</div>
+          <div class="pt-sub">${pct1 !== null ? pct1.toFixed(1) + '% of total forex' : ''}</div>
+        </div>
+        <div class="pt-stat-box">
+          <div class="pt-label">${y2}</div>
+          <div class="pt-value">$${(row2.amountUSD / 1e6).toFixed(0)}M</div>
+          <div class="pt-sub">${pct2 !== null ? pct2.toFixed(1) + '% of total forex' : ''}</div>
+        </div>
+        <div class="pt-stat-box">
+          <div class="pt-label">Change</div>
+          <div class="pt-value ${dollarChange < 0 ? 'gap' : ''}">${dollarChange >= 0 ? '+' : ''}${dollarChangePct.toFixed(0)}%</div>
+          <div class="pt-sub">${dollarChange >= 0 ? '+' : ''}$${(dollarChange / 1e6).toFixed(1)}M in dollar terms</div>
+        </div>
+      </div>
+      <div class="tool-note" style="margin-top:14px;">Sources: ${row1.source || 'unknown'} (${y1}) · ${row2.source || 'unknown'} (${y2}).</div>`;
+  }
+
+  // ---- Farmer Price Trends ----
+  let cropPriceChartInstance = null;
+
+  function setupCropPriceTrends() {
+    const cropSelect = document.getElementById('cropSelect');
+    if (!Array.isArray(CROP_PRICES) || !CROP_PRICES.length) {
+      document.getElementById('cropTrendNote').textContent = 'No crop price data has been entered yet.';
+      return;
+    }
+    const crops = [...new Set(CROP_PRICES.map(r => r.crop))].sort();
+    cropSelect.innerHTML = crops.map(c => `<option value="${c}">${c}</option>`).join('');
+    renderCropTrend();
+  }
+
+  function renderCropTrend() {
+    const crop = document.getElementById('cropSelect').value;
+    const rows = CROP_PRICES.filter(r => r.crop === crop).sort((a, b) => a.year - b.year);
+    const noteEl = document.getElementById('cropTrendNote');
+
+    if (!rows.length) {
+      noteEl.textContent = 'No data for this crop yet.';
+      return;
+    }
+
+    if (cropPriceChartInstance) cropPriceChartInstance.destroy();
+    cropPriceChartInstance = new Chart(document.getElementById('cropPriceChart'), {
+      type: 'line',
+      data: {
+        labels: rows.map(r => r.year),
+        datasets: [{ label: `${crop} — MWK per ${rows[0].unit || 'kg'}`, data: rows.map(r => r.pricePerKg), borderColor: '#2E8B45', backgroundColor: 'rgba(46,139,69,0.08)', fill: true, tension: 0.3, borderWidth: 2.5, pointRadius: 3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { grid: { color: '#F1EAD8' }, ticks: { callback: v => 'MWK ' + v.toLocaleString() } }, x: { grid: { display: false } } }
+      }
+    });
+
+    const sourceLines = [...new Set(rows.filter(r => r.source).map(r => r.source))].join(' · ');
+    if (rows.length >= 2) {
+      const first = rows[0], last = rows[rows.length - 1];
+      const changePct = ((last.pricePerKg - first.pricePerKg) / first.pricePerKg) * 100;
+      noteEl.textContent = `${crop} averaged MWK ${first.pricePerKg.toLocaleString()}/${first.unit || 'kg'} in ${first.year} and MWK ${last.pricePerKg.toLocaleString()}/${last.unit || 'kg'} in ${last.year} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(0)}%). ${sourceLines ? 'Sources: ' + sourceLines + '.' : ''}`;
+    } else {
+      noteEl.textContent = `Only one year on file for ${crop} so far. ${sourceLines ? 'Source: ' + sourceLines + '.' : ''}`;
     }
   }
 
