@@ -245,6 +245,19 @@
     document.getElementById('faqSend').click();
   }
 
+  // Safely escapes a string for use inside an HTML attribute that is itself
+  // delimited with double quotes (e.g. onclick="fn(...)"). Without this,
+  // any question text containing a " or ' breaks the attribute and the
+  // button silently does nothing when tapped.
+  function escapeAttr(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   function fmt(n, d = 1) {
     return (n === null || n === undefined || isNaN(n)) ? '—' : n.toFixed(d);
   }
@@ -384,7 +397,7 @@
         question: `If RBM raised the Policy Rate by 1 percentage point (100bps) from its current level, roughly how much MORE would the annual interest cost be on a MWK ${loanAmount.toLocaleString()} loan, compared to today's rate? (Give just the extra amount, in MWK.)`,
         answer: answerHtml,
         expected, tolerance: 500, unit: 'MWK',
-        helpQuestion: `Can you explain what "monetary policy transmission" means and how a Policy Rate hike flows through to loan costs?`
+        helpQuestion: `Can you explain what monetary policy transmission means and how a Policy Rate hike flows through to loan costs?`
       });
     }
 
@@ -416,6 +429,7 @@
     const levelLabel = level === 'intro' ? 'Intro' : 'Intermediate';
     const topicLabels = { monetary: 'Monetary Policy', inflation: 'Inflation', fx: 'Exchange Rates', external: 'External Sector', money: 'Money & Growth' };
     const expectedJs = expected === null ? 'null' : expected;
+    const helpAttr = escapeAttr(JSON.stringify(helpQuestion));
     return `
       <div class="concept-card visible" data-topic="${topic}" data-level="${level}">
         <div class="concept-tags">
@@ -431,7 +445,7 @@
             <input type="number" step="any" id="${id}-input" placeholder="Your answer${unit ? ' (' + unit + ')' : ''}">
             <button class="btn-check" onclick="checkAnswer('${id}', ${expectedJs}, ${tolerance})">Check</button>
             <button class="btn-reveal" onclick="toggleAnswer('${id}')">Reveal Answer</button>
-            <button class="btn-help" onclick="askForHelp(${JSON.stringify(helpQuestion)})">Ask for help</button>
+            <button class="btn-help" onclick="askForHelp(${helpAttr})">Ask for help</button>
           </div>
           <div class="check-feedback" id="${id}-feedback"></div>
           <div class="answer-box" id="${id}-answer">${answer}</div>
