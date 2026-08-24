@@ -48,7 +48,8 @@ const DEFAULTS = {
   entries: [], policyRates: {}, urbanRural: {}, growthOutlook: {},
   yearlyAverages: [], explainerText: '', contactSettings: {}, faqLog: [],
   exchangeRates: [], tbills: [], omo: [], foreignReserves: [], news: [],
-  masiIndex: [], listedStocks: [], mpcMeetings: [], mpcNext: {}, regionalData: []
+  masiIndex: [], listedStocks: [], mpcMeetings: [], mpcNext: {}, regionalData: [],
+  forexEarners: [], cropPrices: []
 };
 
 class PostgresAdapter {
@@ -353,6 +354,69 @@ app.delete('/api/admin/reserves/:month', requireAdmin, (req, res) => {
 });
 
 
+// ================= FOREIGN EXCHANGE EARNERS =================
+// One row per (year, category) — e.g. 2025 / Tobacco / $412,000,000.
+// Feeds the Dashboard's stacked bar panel and the Tools "Forex Earners Explorer".
+
+app.get('/api/forex-earners', (req, res) => {
+  const rows = db.get('forexEarners').value() || [];
+  res.json(rows.slice().sort((a, b) => a.year - b.year || a.category.localeCompare(b.category)));
+});
+
+app.post('/api/admin/forex-earners', requireAdmin, (req, res) => {
+  const { year, category, amountUSD, source } = req.body;
+  if (!year || !category || amountUSD === undefined) {
+    return res.status(400).json({ error: 'year, category, and amountUSD are required.' });
+  }
+  const existing = db.get('forexEarners').find({ year, category }).value();
+  const entry = { year, category, amountUSD, source };
+  if (existing) {
+    db.get('forexEarners').find({ year, category }).assign(entry).write();
+  } else {
+    db.get('forexEarners').push(entry).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/forex-earners/:year/:category', requireAdmin, (req, res) => {
+  const year = parseInt(req.params.year, 10);
+  db.get('forexEarners').remove({ year, category: req.params.category }).write();
+  res.json({ ok: true });
+});
+
+
+// ================= FARMER CROP PRICES =================
+// One row per (crop, year) — average price per kg actually paid, as published
+// by RBM/NSO/Ministry of Agriculture. No cost-of-production or per-farm
+// profit data is stored — see the Farmer Price Trends tool for why.
+
+app.get('/api/crop-prices', (req, res) => {
+  const rows = db.get('cropPrices').value() || [];
+  res.json(rows.slice().sort((a, b) => a.crop.localeCompare(b.crop) || a.year - b.year));
+});
+
+app.post('/api/admin/crop-prices', requireAdmin, (req, res) => {
+  const { crop, year, pricePerKg, unit, source } = req.body;
+  if (!crop || !year || pricePerKg === undefined) {
+    return res.status(400).json({ error: 'crop, year, and pricePerKg are required.' });
+  }
+  const existing = db.get('cropPrices').find({ crop, year }).value();
+  const entry = { crop, year, pricePerKg, unit: unit || 'kg', source };
+  if (existing) {
+    db.get('cropPrices').find({ crop, year }).assign(entry).write();
+  } else {
+    db.get('cropPrices').push(entry).write();
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/crop-prices/:crop/:year', requireAdmin, (req, res) => {
+  const year = parseInt(req.params.year, 10);
+  db.get('cropPrices').remove({ crop: req.params.crop, year }).write();
+  res.json({ ok: true });
+});
+
+
 // ================= STOCK MARKET (Malawi Stock Exchange) =================
 // Manually entered, same pattern as reserves/tbills — MSE's own data terms
 // restrict automated republishing, so figures are entered by hand each update
@@ -570,6 +634,8 @@ app.post('/api/faq-ask', async (req, res) => {
     const mpcNext = db.get('mpcNext').value() || {};
     const urbanRural = db.get('urbanRural').value() || {};
     const regional = db.get('regionalData').value() || [];
+    const forexEarners = db.get('forexEarners').value() || [];
+    const cropPrices = db.get('cropPrices').value() || [];
 
     const systemPrompt = `You are a patient, thorough teacher on an independent Malawi economic data dashboard (not affiliated with RBM). Assume the visitor may be encountering these concepts for the first time — they are here BECAUSE they want to genuinely understand, not just see a number restated back to them.
 
@@ -589,9 +655,10 @@ Style rules:
 - Never claim to be RBM or an official source.
 
 What you can draw on:
-- For the SPECIFIC current figures (inflation rate, policy rate, exchange rate, reserves, T-bill yields, MPC decisions, regional comparisons), use ONLY the real data below — never invent or estimate a number that isn't listed there.
+- For the SPECIFIC current figures (inflation rate, policy rate, exchange rate, reserves, T-bill yields, MPC decisions, regional comparisons, forex earners, crop prices), use ONLY the real data below — never invent or estimate a number that isn't listed there.
 - For broader economic concepts, causes, historical context, or related topics NOT directly on the dashboard (e.g. "why does Malawi have forex shortages", "what is a Eurobond", "how does devaluation work", "what caused the 2023 inflation spike"), you may use your general economic knowledge to give a genuinely helpful, informative answer — this dashboard should be a place people can learn broadly about Malawi's economy, not just look up today's numbers.
 - When you go beyond the dashboard's own data, make that boundary clear and natural in your answer — e.g. "Our dashboard doesn't track this directly, but more broadly..." — rather than refusing to engage or just pointing to the Learn page. Only redirect to the Learn page if you genuinely have nothing useful to say on the topic.
+- If asked about farm profit, expected earnings for a specific farm size, or cost of production, explain that this dashboard only shows published market prices per kg — not cost-of-production, which varies too much farm to farm to source reliably — and that this is a deliberate choice to avoid presenting guessed numbers as fact.
 
 Current data — you can be asked about any of these:
 - Latest headline inflation: ${latest.headline ?? 'unknown'}% (${latest.label ?? 'unknown month'})
@@ -607,7 +674,9 @@ Current data — you can be asked about any of these:
 - Treasury Bill yields: ${tbills.length ? tbills.map(t => `${t.tenor} at ${t.yield}% (${t.date})`).join(', ') : 'no data yet'}
 - Most recent MPC decision: ${latestMpc.decision ?? 'unknown'} on ${latestMpc.date ?? 'unknown date'} — ${latestMpc.reason ?? 'no reason recorded'}
 - Next scheduled MPC meeting: ${mpcNext.nextMeetingDate ?? 'unknown'}
-- Regional comparison: ${regional.length ? regional.map(r => `${r.country}: inflation ${r.headlineInflation ?? '?'}%, policy rate ${r.policyRate ?? '?'}%`).join(' | ') : 'no data yet'}`;
+- Regional comparison: ${regional.length ? regional.map(r => `${r.country}: inflation ${r.headlineInflation ?? '?'}%, policy rate ${r.policyRate ?? '?'}%`).join(' | ') : 'no data yet'}
+- Foreign exchange earners by category (USD, by year): ${forexEarners.length ? forexEarners.map(f => `${f.category} ${f.year}: $${f.amountUSD}`).join(' | ') : 'no data yet'}
+- Farmer crop prices (published price per kg, by year): ${cropPrices.length ? cropPrices.map(c => `${c.crop} ${c.year}: ${c.pricePerKg} MWK/${c.unit || 'kg'}`).join(' | ') : 'no data yet'}`;
 
     // Build multi-turn context: prior turns (if any) followed by the current question.
     const priorTurns = Array.isArray(history)
