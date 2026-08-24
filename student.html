@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Students — Malawi Economic Indicators</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .nav-more { position: relative; display: inline-block; }
+  .nav-more-btn {
+    font: inherit; cursor: pointer; border-radius: 999px;
+    padding: 10px 16px; border: 1px solid rgba(0,0,0,0.12);
+    background: transparent; color: inherit; font-weight: 700;
+    letter-spacing: 0.04em; line-height: 1;
+  }
+  .nav-more-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    background: #fff; border-radius: 12px; box-shadow: 0 12px 28px rgba(43,32,10,0.18);
+    min-width: 168px; padding: 6px; z-index: 40;
+  }
+  .nav-more-panel.open { display: block; }
+  .nav-more-panel a {
+    display: block; padding: 10px 12px; border-radius: 8px;
+    color: #4a3c1f; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-more-panel a:hover { background: #F1EAD8; }
+
+  /* ---- Topic tabs (reused pattern from Tools page) ---- */
+  .tool-tabs {
+    display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 4px 2px 12px; margin: 18px 0 4px; scrollbar-width: none;
+  }
+  .tool-tabs::-webkit-scrollbar { display: none; }
+  .tool-tab {
+    flex: 0 0 auto; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--border);
+    background: #fff; color: #6b5c33; font-weight: 700; font-size: 13px; cursor: pointer;
+    white-space: nowrap; font-family: 'Inter';
+  }
+  .tool-tab.active { background: var(--gold-deep); border-color: var(--gold-deep); color: #fff; }
+
+  .level-filter { display: flex; gap: 6px; margin: 4px 0 18px; flex-wrap: wrap; }
+  .level-chip {
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: #fff; color: #7a6f52; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  }
+  .level-chip.active { background: #FBF0DA; border-color: var(--gold); color: var(--gold-deep); }
+
+  .concept-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 24px; margin-bottom: 16px; display: none;
+  }
+  .concept-card.visible { display: block; }
+  .concept-tags { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .concept-tag {
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .concept-tag.topic { background: #FBF0DA; color: var(--gold-deep); }
+  .concept-tag.level-intro { background: #E6F4EA; color: #2E8B45; }
+  .concept-tag.level-intermediate { background: #FBE9E9; color: #C43D3D; }
+  .concept-card h4 { font-family: 'Fraunces'; font-size: 17px; color: var(--gold-deep); margin-bottom: 8px; }
+  .concept-card .explainer { font-size: 14px; line-height: 1.7; color: #4a4130; margin-bottom: 16px; }
+  .problem-box {
+    background: #FAF6EC; border-radius: 10px; padding: 16px 18px; font-size: 13.5px; color: #4a3c1f; line-height: 1.6;
+  }
+  .problem-box .q-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: #9a8f74; margin-bottom: 6px; }
+
+  .try-row { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .try-row input {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid #d9c48f; font-size: 13.5px;
+    font-family: 'Inter'; width: 140px; max-width: 100%;
+  }
+  .btn-check {
+    padding: 8px 16px; border-radius: 8px; border: none; background: var(--gold-deep);
+    color: #fff; font-weight: 700; font-size: 12.5px; cursor: pointer;
+  }
+  .btn-reveal {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid var(--gold);
+    background: #fff; color: var(--gold-deep); font-weight: 700; font-size: 12.5px; cursor: pointer;
+  }
+  .btn-help {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid #8F6620;
+    background: #fff; color: #8F6620; font-weight: 700; font-size: 12.5px; cursor: pointer;
+  }
+  .check-feedback { margin-top: 10px; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 8px; display: none; }
+  .check-feedback.shown { display: block; }
+  .check-feedback.correct { background: #E6F4EA; color: #2E8B45; }
+  .check-feedback.close { background: #FBF0DA; color: #8F6620; }
+  .check-feedback.wrong { background: #FBE9E9; color: #C43D3D; }
+
+  .answer-box {
+    display: none; margin-top: 12px; padding: 14px 16px; background: #fff;
+    border: 1px solid #E7D19F; border-radius: 10px; font-size: 13.5px; color: #4a3c1f; line-height: 1.65;
+  }
+  .answer-box.shown { display: block; }
+  .answer-box b { color: var(--gold-deep); }
+  .loading-note { text-align: center; padding: 30px; color: #9a8f74; font-size: 13.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="banner">
+    <b>Independent prototype</b> — built from the Reserve Bank of Malawi's own published releases. Not affiliated with or endorsed by RBM. Every figure below is a real, sourced value — see the <a href="sources.html">Sources page</a>.
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand">
+        <div class="hero-logo">RBM</div>
+        <div>
+          <div class="hero-title">For Students</div>
+          <div class="hero-sub">Economics concepts explained, then applied to Malawi's real, current data — not a textbook example, the actual numbers.</div>
+        </div>
+      </div>
+      <div class="hero-nav">
+        <a class="navbtn" href="index.html">Dashboard</a>
+        <a class="navbtn" href="tools.html">Tools</a>
+      </div>
+    </div>
+  </div>
+  <div class="nav-more">
+    <button class="nav-more-btn" onclick="toggleNavMore(this)" aria-haspopup="true" aria-expanded="false">☰</button>
+    <div class="nav-more-panel" id="navMorePanel">
+      <a href="learn.html">Learn</a>
+      <a href="news.html">News</a>
+      <a href="about.html">About</a>
+      <a href="stocks.html">Stock Market</a>
+      <a href="student.html">For Students</a>
+      <a href="sources.html">Sources</a>
+    </div>
+  </div>
+
+  <div class="tool-tabs" id="topicTabs">
+    <button class="tool-tab active" data-topic="all" onclick="setTopic('all', this)">All Topics</button>
+    <button class="tool-tab" data-topic="monetary" onclick="setTopic('monetary', this)">Monetary Policy</button>
+    <button class="tool-tab" data-topic="inflation" onclick="setTopic('inflation', this)">Inflation</button>
+    <button class="tool-tab" data-topic="fx" onclick="setTopic('fx', this)">Exchange Rates</button>
+    <button class="tool-tab" data-topic="external" onclick="setTopic('external', this)">External Sector</button>
+    <button class="tool-tab" data-topic="money" onclick="setTopic('money', this)">Money & Growth</button>
+  </div>
+
+  <div class="level-filter" id="levelFilter">
+    <button class="level-chip active" data-level="all" onclick="setLevel('all', this)">All Levels</button>
+    <button class="level-chip" data-level="intro" onclick="setLevel('intro', this)">Intro</button>
+    <button class="level-chip" data-level="intermediate" onclick="setLevel('intermediate', this)">Intermediate</button>
+  </div>
+
+  <div id="cardsWrap">
+    <div class="loading-note">Loading current data…</div>
+  </div>
+
+  <div class="footer">
+    <div class="left">Independent prototype built from the Reserve Bank of Malawi's own public releases. Not affiliated with or endorsed by RBM. These practice problems are simplified teaching illustrations, not formal econometric methodology.</div>
+    <div class="contact"><div>reserve-bank@rbm.mw</div><div>www.rbm.mw</div><div>Toll-free 459</div></div>
+  </div>
+
+</div>
+
+<button id="faqToggle">💬</button>
+<div id="faqPanel">
+  <div class="faq-header">Ask about this data</div>
+  <div id="faqMessages"></div>
+  <div id="faqInputRow">
+    <input id="faqInput" type="text" placeholder="Ask a question...">
+    <button id="faqSend">Send</button>
+  </div>
+</div>
+
+<script>
+  function toggleNavMore(btn) {
+    const panel = document.getElementById('navMorePanel');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.nav-more');
+    const panel = document.getElementById('navMorePanel');
+    if (wrap && panel && !wrap.contains(e.target)) panel.classList.remove('open');
+  });
+
+  let currentTopic = 'all';
+  let currentLevel = 'all';
+
+  function setTopic(topic, btn) {
+    currentTopic = topic;
+    document.querySelectorAll('#topicTabs .tool-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  }
+  function setLevel(level, btn) {
+    currentLevel = level;
+    document.querySelectorAll('#levelFilter .level-chip').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  }
+  function applyFilters() {
+    document.querySelectorAll('.concept-card').forEach(card => {
+      const topicMatch = currentTopic === 'all' || card.dataset.topic === currentTopic;
+      const levelMatch = currentLevel === 'all' || card.dataset.level === currentLevel;
+      card.classList.toggle('visible', topicMatch && levelMatch);
+    });
+  }
+
+  function toggleAnswer(id) {
+    document.getElementById(id + '-answer').classList.toggle('shown');
+  }
+
+  // Checks the student's typed answer against the correct numeric value.
+  function checkAnswer(id, expected, tolerance) {
+    const input = document.getElementById(id + '-input');
+    const feedback = document.getElementById(id + '-feedback');
+    const val = parseFloat(input.value);
+    feedback.classList.add('shown');
+    if (expected === null || isNaN(expected)) {
+      feedback.className = 'check-feedback shown close';
+      feedback.textContent = "This one can't be checked yet — the underlying data isn't fully available.";
+      return;
+    }
+    if (isNaN(val)) {
+      feedback.className = 'check-feedback shown close';
+      feedback.textContent = 'Type a number first.';
+      return;
+    }
+    const diff = Math.abs(val - expected);
+    if (diff <= tolerance) {
+      feedback.className = 'check-feedback shown correct';
+      feedback.textContent = '✅ Correct! Nice work.';
+    } else if (diff <= tolerance * 4) {
+      feedback.className = 'check-feedback shown close';
+      feedback.textContent = 'Close, but not quite — double-check your calculation, or reveal the answer below.';
+    } else {
+      feedback.className = 'check-feedback shown wrong';
+      feedback.textContent = 'Not quite there — try again, or reveal the answer below to see the working.';
+    }
+  }
+
+  // Opens the existing AI chat bot and sends a pre-loaded question for this concept.
+  function askForHelp(question) {
+    const panel = document.getElementById('faqPanel');
+    panel.style.display = 'flex';
+    const input = document.getElementById('faqInput');
+    input.value = question;
+    document.getElementById('faqSend').click();
+  }
+
+  function fmt(n, d = 1) {
+    return (n === null || n === undefined || isNaN(n)) ? '—' : n.toFixed(d);
+  }
+
+  async function loadAndBuild() {
+    let headline = null, policyRate = null, moneySupplyGrowth = null, growthProjection = null;
+    let fxHistory = [], reserves = [];
+
+    try {
+      const summary = await fetch('/api/summary').then(r => r.json());
+      headline = summary.latest?.headline ?? null;
+      policyRate = summary.policyRates?.policyRate ?? null;
+      moneySupplyGrowth = summary.policyRates?.moneySupplyGrowth ?? null;
+      growthProjection = summary.growthOutlook?.projection2026 ?? null;
+    } catch (e) {}
+
+    try {
+      fxHistory = await fetch('/api/exchange-rates').then(r => r.json());
+    } catch (e) {}
+
+    try {
+      reserves = await fetch('/api/reserves').then(r => r.json());
+    } catch (e) {}
+
+    const wrap = document.getElementById('cardsWrap');
+    wrap.innerHTML = '';
+
+    // ---------- 1. Fisher Equation (real vs nominal rate) ----------
+    {
+      let expected = null, answerHtml;
+      if (policyRate != null && headline != null) {
+        expected = +(policyRate - headline).toFixed(1);
+        answerHtml = `Real interest rate ≈ Nominal rate − Inflation = <b>${policyRate}% − ${headline}% = ${expected >= 0 ? '+' : ''}${expected}%</b>.<br><br>
+          A ${expected < 0 ? 'negative' : 'positive'} real rate means that ${expected < 0 ? "even at the Reserve Bank's Policy Rate, money is losing buying power faster than the nominal rate compensates for" : "the nominal rate more than compensates for inflation, so real buying power grows"}.`;
+      } else {
+        answerHtml = 'Current Policy Rate or inflation figure is not yet available in the data.';
+      }
+      wrap.innerHTML += conceptCard({
+        id: 'c1', topic: 'monetary', level: 'intro',
+        title: 'The Fisher Equation — Real vs Nominal Interest Rates',
+        explainer: `The interest rate you see quoted (the "nominal" rate) doesn't tell you how much your money's buying power actually changes — inflation eats into it. The Fisher equation approximates this: <i>Real rate ≈ Nominal rate − Inflation rate</i>. A positive real rate means your money grows in real terms; a negative one means it shrinks, even while the nominal number looks positive.`,
+        question: `Using today's Policy Rate (${fmt(policyRate,1)}%) and headline inflation (${fmt(headline,1)}%), calculate Malawi's approximate real interest rate.`,
+        answer: answerHtml,
+        expected, tolerance: 0.15, unit: '%',
+        helpQuestion: `Can you explain how to calculate the real interest rate using the Fisher equation, with Malawi's current Policy Rate and inflation figures?`
+      });
+    }
+
+    // ---------- 2. CPI & cost of living ----------
+    {
+      const basket = 50000;
+      let expected = null, answerHtml;
+      if (headline != null) {
+        expected = Math.round(basket * (1 + headline / 100));
+        answerHtml = `New cost = MWK ${basket.toLocaleString()} × (1 + ${headline}/100) = <b>MWK ${expected.toLocaleString()}</b>.<br><br>
+          That's an increase of roughly MWK ${(expected - basket).toLocaleString()} for the exact same basket of goods — this is what "${headline}% inflation" means in a concrete, everyday sense.`;
+      } else {
+        answerHtml = 'Current inflation figure is not yet available in the data.';
+      }
+      wrap.innerHTML += conceptCard({
+        id: 'c2', topic: 'inflation', level: 'intro',
+        title: 'CPI and the Cost of Living',
+        explainer: `The Consumer Price Index (CPI) tracks the average price of a fixed "basket" of goods and services over time. Headline inflation is simply the percentage change in that basket's cost compared to a year ago — it's an average across many households, so any one person's actual experience may differ.`,
+        question: `If a household's monthly basket of goods cost MWK ${basket.toLocaleString()} a year ago, and headline inflation is now ${fmt(headline,1)}%, roughly what would the same basket cost today (in MWK)?`,
+        answer: answerHtml,
+        expected, tolerance: 500, unit: 'MWK',
+        helpQuestion: `Can you walk me through how to calculate the new cost of a basket of goods given last year's price and the current inflation rate?`
+      });
+    }
+
+    // ---------- 3. Exchange rate depreciation ----------
+    {
+      let expected = null, answerHtml;
+      const sorted = fxHistory.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (sorted.length >= 2) {
+        const prev = sorted[sorted.length - 2];
+        const latest = sorted[sorted.length - 1];
+        expected = +(((latest.usd - prev.usd) / prev.usd) * 100).toFixed(2);
+        answerHtml = `% change = (${latest.usd} − ${prev.usd}) / ${prev.usd} × 100 = <b>${expected >= 0 ? '+' : ''}${expected}%</b> (${prev.date} → ${latest.date}).<br><br>
+          A positive number means the Kwacha weakened (more MWK needed per USD) — this tends to make imported goods more expensive and can add to inflation.`;
+      } else {
+        answerHtml = 'Only one exchange rate entry is currently on file, so a period-over-period change can\'t be calculated yet — this problem will work automatically once a second historical rate is added.';
+      }
+      wrap.innerHTML += conceptCard({
+        id: 'c3', topic: 'fx', level: 'intermediate',
+        title: 'Exchange Rate Depreciation',
+        explainer: `When a currency "depreciates," it takes more of that currency to buy one unit of a foreign currency — meaning it has become relatively weaker. The percentage change is calculated as (New rate − Old rate) / Old rate × 100. A country that imports heavily (like Malawi, for fuel and many manufactured goods) tends to see import prices rise when its currency depreciates.`,
+        question: `Using the two most recent USD/MWK exchange rates on file, calculate the percentage change in the Kwacha's value against the US dollar.`,
+        answer: answerHtml,
+        expected, tolerance: 0.3, unit: '%',
+        helpQuestion: `Can you explain how to calculate the percentage change in an exchange rate between two dates?`
+      });
+    }
+
+    // ---------- 4. Foreign reserves & import cover ----------
+    {
+      let expected = null, answerHtml;
+      const sortedReserves = reserves.slice().sort((a, b) => (a.month > b.month ? 1 : -1));
+      const latestR = sortedReserves[sortedReserves.length - 1];
+      if (latestR && latestR.amountUSD && latestR.monthlyImportBillUSD) {
+        expected = +(latestR.amountUSD / latestR.monthlyImportBillUSD).toFixed(1);
+        answerHtml = `Import cover = Reserves ÷ Monthly import bill = $${(latestR.amountUSD/1e6).toFixed(0)}M ÷ $${(latestR.monthlyImportBillUSD/1e6).toFixed(0)}M = <b>${expected} months</b>.<br><br>
+          Since ${expected} is ${expected < 3 ? 'below' : 'above'} the commonly-used 3-month benchmark, this would generally be read as ${expected < 3 ? 'a warning sign — the country has limited buffer if foreign currency inflows slowed suddenly' : 'a reasonably comfortable buffer'}.`;
+      } else {
+        answerHtml = 'Reserves or import bill figures are not yet fully entered in the data.';
+      }
+      wrap.innerHTML += conceptCard({
+        id: 'c4', topic: 'external', level: 'intermediate',
+        title: 'Foreign Reserves & Import Cover',
+        explainer: `"Import cover" measures how many months a country could keep paying for imports using only its existing foreign currency reserves, assuming no new foreign currency came in. Economists commonly treat 3 months as a rough adequacy threshold — below that is generally considered risky for a country's external stability.`,
+        question: `Using Malawi's latest foreign reserves figure and its monthly import bill, calculate the import cover ratio in months.`,
+        answer: answerHtml,
+        expected, tolerance: 0.15, unit: 'months',
+        helpQuestion: `Can you explain how to calculate import cover from foreign reserves and the monthly import bill, and why the 3-month benchmark matters?`
+      });
+    }
+
+    // ---------- 5. Monetary policy transmission ----------
+    {
+      const loanAmount = 1000000;
+      let expected = null, answerHtml;
+      if (policyRate != null) {
+        const currentInterest = loanAmount * (policyRate / 100);
+        const hikedRate = policyRate + 1;
+        const hikedInterest = loanAmount * (hikedRate / 100);
+        expected = Math.round(hikedInterest - currentInterest);
+        answerHtml = `At today's rate: MWK ${loanAmount.toLocaleString()} × ${policyRate}% = <b>MWK ${Math.round(currentInterest).toLocaleString()}</b> per year in interest.<br>
+          At a hiked rate of ${hikedRate}%: MWK ${loanAmount.toLocaleString()} × ${hikedRate}% = <b>MWK ${Math.round(hikedInterest).toLocaleString()}</b> per year.<br><br>
+          That's roughly <b>MWK ${expected.toLocaleString()}</b> more per year — this is a simplified illustration of "monetary transmission": a Policy Rate change flows through to loan costs, which affects how much businesses and households borrow and spend, which in turn affects demand and inflation.`;
+      } else {
+        answerHtml = 'Current Policy Rate is not yet available in the data.';
+      }
+      wrap.innerHTML += conceptCard({
+        id: 'c5', topic: 'monetary', level: 'intermediate',
+        title: 'Monetary Policy Transmission',
+        explainer: `When a central bank changes its Policy Rate, that change doesn't affect inflation directly — it works through a chain: the Policy Rate influences what commercial banks charge on loans, which influences how much people and businesses borrow and spend, which influences overall demand in the economy, which eventually influences inflation. This chain is called the "transmission mechanism," and it typically takes months to fully play out.`,
+        question: `If RBM raised the Policy Rate by 1 percentage point (100bps) from its current level, roughly how much MORE would the annual interest cost be on a MWK ${loanAmount.toLocaleString()} loan, compared to today's rate? (Give just the extra amount, in MWK.)`,
+        answer: answerHtml,
+        expected, tolerance: 500, unit: 'MWK',
+        helpQuestion: `Can you explain what "monetary policy transmission" means and how a Policy Rate hike flows through to loan costs?`
+      });
+    }
+
+    // ---------- 6. Quantity theory of money ----------
+    {
+      let expected = null, answerHtml;
+      if (moneySupplyGrowth != null && growthProjection != null) {
+        expected = +(moneySupplyGrowth - growthProjection).toFixed(1);
+        answerHtml = `Gap ≈ Money supply growth − Real output growth = ${moneySupplyGrowth}% − ${growthProjection}% = <b>${expected >= 0 ? '+' : ''}${expected}pp</b>.<br><br>
+          Under the simple quantity theory intuition (MV = PQ, holding velocity V roughly constant), when money supply grows faster than real output, the "extra" money tends to show up as upward pressure on prices rather than more real goods and services — consistent with the inflationary pressure Malawi has experienced.`;
+      } else {
+        answerHtml = 'Money supply growth or the growth projection figure is not yet available in the data.';
+      }
+      wrap.innerHTML += conceptCard({
+        id: 'c6', topic: 'money', level: 'intermediate',
+        title: 'The Quantity Theory of Money',
+        explainer: `The quantity theory of money, expressed as MV = PQ (Money supply × Velocity = Price level × real Output), suggests that if money supply grows faster than the real economy actually grows, and velocity stays roughly stable, the excess tends to translate into higher prices rather than more real production. It's a simplification — velocity isn't really constant — but it's a useful starting intuition for why rapid money supply growth often accompanies inflation.`,
+        question: `Money supply (M2) is growing at ${fmt(moneySupplyGrowth,1)}% while Malawi's real GDP growth is projected at ${fmt(growthProjection,1)}%. Calculate the gap between these two figures (in percentage points).`,
+        answer: answerHtml,
+        expected, tolerance: 0.2, unit: 'pp',
+        helpQuestion: `Can you explain the quantity theory of money (MV = PQ) and what it suggests when money supply grows faster than real GDP?`
+      });
+    }
+
+    applyFilters();
+  }
+
+  function conceptCard({ id, topic, level, title, explainer, question, answer, expected, tolerance, unit, helpQuestion }) {
+    const levelLabel = level === 'intro' ? 'Intro' : 'Intermediate';
+    const topicLabels = { monetary: 'Monetary Policy', inflation: 'Inflation', fx: 'Exchange Rates', external: 'External Sector', money: 'Money & Growth' };
+    const expectedJs = expected === null ? 'null' : expected;
+    return `
+      <div class="concept-card visible" data-topic="${topic}" data-level="${level}">
+        <div class="concept-tags">
+          <span class="concept-tag topic">${topicLabels[topic]}</span>
+          <span class="concept-tag level-${level}">${levelLabel}</span>
+        </div>
+        <h4>${title}</h4>
+        <div class="explainer">${explainer}</div>
+        <div class="problem-box">
+          <div class="q-label">Practice Problem</div>
+          ${question}
+          <div class="try-row">
+            <input type="number" step="any" id="${id}-input" placeholder="Your answer${unit ? ' (' + unit + ')' : ''}">
+            <button class="btn-check" onclick="checkAnswer('${id}', ${expectedJs}, ${tolerance})">Check</button>
+            <button class="btn-reveal" onclick="toggleAnswer('${id}')">Reveal Answer</button>
+            <button class="btn-help" onclick="askForHelp(${JSON.stringify(helpQuestion)})">Ask for help</button>
+          </div>
+          <div class="check-feedback" id="${id}-feedback"></div>
+          <div class="answer-box" id="${id}-answer">${answer}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  loadAndBuild();
+</script>
+<script src="faq-bot.js"></script>
+</body>
+</html>
