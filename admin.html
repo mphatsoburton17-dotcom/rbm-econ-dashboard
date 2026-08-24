@@ -67,6 +67,8 @@
       <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
       <button class="adm-tab" onclick="showTab('mpc', this)">MPC Meetings</button>
       <button class="adm-tab" onclick="showTab('regional', this)">Regional Comparator</button>
+      <button class="adm-tab" onclick="showTab('forex', this)">Forex Earners</button>
+      <button class="adm-tab" onclick="showTab('cropprices', this)">Crop Prices</button>
     </div>
 
     <!-- 1. OVERVIEW -->
@@ -375,6 +377,47 @@
       <div id="regionalMsg"></div>
     </div>
 
+    <!-- 17. FOREX EARNERS -->
+    <div class="adm-section" id="tab-forex">
+      <h3>Foreign Exchange Earners</h3>
+      <div class="sub">One row per year + export category (e.g. 2025 / Tobacco / $412,000,000). Feeds the Dashboard's stacked bar panel and the Tools "Forex Earners Explorer". Source should be the RBM balance of payments release, NSO trade statistics, or Ministry of Trade figures for that year.</div>
+      <table class="adm-table">
+        <thead><tr><th>Year</th><th>Category</th><th>Amount (USD)</th><th>Source</th><th></th></tr></thead>
+        <tbody id="forexBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Year</label><input id="fxeYear" placeholder="2026"></div>
+        <div class="adm-field"><label>Category</label><input id="fxeCategory" placeholder="Tobacco"></div>
+        <div class="adm-field"><label>Amount (USD)</label><input type="number" id="fxeAmount" placeholder="412000000"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Source</label><input id="fxeSource" placeholder="RBM Balance of Payments Release, 2026"></div>
+      </div>
+      <button class="adm-btn" onclick="saveForexEarner()">Save Entry</button>
+      <div id="forexMsg"></div>
+    </div>
+
+    <!-- 18. CROP PRICES -->
+    <div class="adm-section" id="tab-cropprices">
+      <h3>Farmer Crop Prices</h3>
+      <div class="sub">One row per crop + year. This is the average price per kg actually paid, as published — not cost of production or expected profit. Feeds the Tools "Farmer Price Trends" tab.</div>
+      <table class="adm-table">
+        <thead><tr><th>Crop</th><th>Year</th><th>Price</th><th>Source</th><th></th></tr></thead>
+        <tbody id="cropBody"></tbody>
+      </table>
+      <div class="adm-row" style="margin-top:12px;">
+        <div class="adm-field"><label>Crop</label><input id="cpCrop" placeholder="Tobacco"></div>
+        <div class="adm-field"><label>Year</label><input id="cpYear" placeholder="2026"></div>
+        <div class="adm-field"><label>Price per kg (MWK)</label><input type="number" step="0.01" id="cpPrice" placeholder="2350"></div>
+        <div class="adm-field"><label>Unit (default kg)</label><input id="cpUnit" placeholder="kg"></div>
+      </div>
+      <div class="adm-row">
+        <div class="adm-field"><label>Source</label><input id="cpSource" placeholder="RBM/NSO/Ministry of Agriculture, 2026"></div>
+      </div>
+      <button class="adm-btn" onclick="saveCropPrice()">Save Entry</button>
+      <div id="cropMsg"></div>
+    </div>
+
   </div>
 </div>
 
@@ -394,6 +437,7 @@
       document.getElementById('panel').style.display = 'block';
       loadOverview(); loadHistory(); loadOther(); loadYearly(); loadExplainer(); loadFaq(); loadContact();
       loadFx(); loadTbills(); loadOmo(); loadReserves(); loadNews(); loadMpc(); loadRegional();
+      loadForexEarners(); loadCropPrices();
     } else {
       document.getElementById('loginMsg').innerHTML = '<div class="adm-msg err">Incorrect password.</div>';
     }
@@ -850,6 +894,72 @@
     await fetch('/api/admin/regional/' + encodeURIComponent(country), { method: 'DELETE', headers: authHeaders() });
     loadRegional();
   }
+
+  // ---- Forex Earners ----
+  async function loadForexEarners() {
+    const rows = await fetch('/api/forex-earners').then(r => r.json());
+    const body = document.getElementById('forexBody');
+    body.innerHTML = '';
+    rows.slice().reverse().forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.year}</td><td>${r.category}</td><td>$${(r.amountUSD / 1e6).toFixed(1)}M</td><td>${r.source || ''}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteForexEarner(${r.year}, '${r.category.replace(/'/g, "\\'")}')">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveForexEarner() {
+    const body = {
+      year: parseInt(document.getElementById('fxeYear').value, 10),
+      category: document.getElementById('fxeCategory').value,
+      amountUSD: parseFloat(document.getElementById('fxeAmount').value),
+      source: document.getElementById('fxeSource').value
+    };
+    if (!body.year || !body.category || isNaN(body.amountUSD)) {
+      document.getElementById('forexMsg').innerHTML = '<div class="adm-msg err">Year, category, and amount are required.</div>';
+      return;
+    }
+    const res = await fetch('/api/admin/forex-earners', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('forexMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadForexEarners();
+  }
+  async function deleteForexEarner(year, category) {
+    await fetch('/api/admin/forex-earners/' + year + '/' + encodeURIComponent(category), { method: 'DELETE', headers: authHeaders() });
+    loadForexEarners();
+  }
+
+  // ---- Crop Prices ----
+  async function loadCropPrices() {
+    const rows = await fetch('/api/crop-prices').then(r => r.json());
+    const body = document.getElementById('cropBody');
+    body.innerHTML = '';
+    rows.slice().reverse().forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.crop}</td><td>${r.year}</td><td>MWK ${r.pricePerKg.toLocaleString()}/${r.unit || 'kg'}</td><td>${r.source || ''}</td>
+        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteCropPrice(${r.year}, '${r.crop.replace(/'/g, "\\'")}')">Delete</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+  async function saveCropPrice() {
+    const body = {
+      crop: document.getElementById('cpCrop').value,
+      year: parseInt(document.getElementById('cpYear').value, 10),
+      pricePerKg: parseFloat(document.getElementById('cpPrice').value),
+      unit: document.getElementById('cpUnit').value || 'kg',
+      source: document.getElementById('cpSource').value
+    };
+    if (!body.crop || !body.year || isNaN(body.pricePerKg)) {
+      document.getElementById('cropMsg').innerHTML = '<div class="adm-msg err">Crop, year, and price are required.</div>';
+      return;
+    }
+    const res = await fetch('/api/admin/crop-prices', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+    document.getElementById('cropMsg').innerHTML = res.ok ? '<div class="adm-msg ok">Saved.</div>' : '<div class="adm-msg err">Error.</div>';
+    loadCropPrices();
+  }
+  async function deleteCropPrice(year, crop) {
+    await fetch('/api/admin/crop-prices/' + encodeURIComponent(crop) + '/' + year, { method: 'DELETE', headers: authHeaders() });
+    loadCropPrices();
+  }
 </script>
 </body>
 </html>
+
