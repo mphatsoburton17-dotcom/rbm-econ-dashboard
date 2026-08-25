@@ -417,6 +417,113 @@ app.delete('/api/admin/crop-prices/:crop/:year', requireAdmin, (req, res) => {
 });
 
 
+// ================= AI-ASSISTED DATA ENTRY =================
+// Reuses the same GEMINI_API_KEY already configured for the FAQ assistant.
+// Two capabilities:
+//
+// 1) "Fetch Latest Now" for T-Bills / Foreign Reserves — asks Gemini to search
+//    the web for the latest published figures and returns them for the admin
+//    to REVIEW before saving. Unlike the exchange-rate auto-fetch (a real
+//    structured API), there's no free structured feed for these, so this is
+//    best-effort web search, not guaranteed accurate — treat it as a
+//    first draft, not a source of truth.
+//
+// 2) "Extract from pasted text" — the admin pastes the RBM/NSO/press-release
+//    text they already have open, and Gemini pulls the structured fields out
+//    to pre-fill whichever form they're working in. Also review-before-save.
+//
+// NOTE: if you get errors from these two endpoints, the most likely cause is
+// the Gemini API version/tool-name for web search grounding having changed
+// since this was written (Google renames this occasionally). Check Google's
+// current Gemini API docs for the current "search grounding" tool name if so
+// — everything else in this block should keep working either way.
+
+async function callGeminiJson(prompt, useSearch) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('AI not configured (GEMINI_API_KEY missing)');
+
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: 'application/json' }
+  };
+  if (useSearch) body.tools = [{ google_search: {} }];
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error(data?.error?.message || 'No response from AI');
+  // Model sometimes wraps JSON in ```json fences even when asked not to — strip them.
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  return JSON.parse(cleaned);
+}
+
+// -- Fetch latest T-Bill yields (best effort, search-grounded, review before saving) --
+app.get('/api/fetch-tbills', requireAdmin, async (req, res) => {
+  try {
+    const result = await callGeminiJson(
+      'Search for the most recent Reserve Bank of Malawi (RBM) Treasury Bill auction results ' +
+      '(91-day, 182-day, 364-day yields). Respond with ONLY a JSON object, no other text, in this exact shape: ' +
+      '{"date":"YYYY-MM-DD","results":[{"tenor":"91-day","yield":0.0},{"tenor":"182-day","yield":0.0},{"tenor":"364-day","yield":0.0}],"source":"short description of where this came from"}. ' +
+      'If you cannot find a real recent figure for a tenor, omit that tenor from the results array rather than guessing.',
+      true
+    );
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// -- Fetch latest Foreign Reserves figure (best effort, search-grounded, review before saving) --
+app.get('/api/fetch-reserves', requireAdmin, async (req, res) => {
+  try {
+    const result = await callGeminiJson(
+      'Search for the most recent Reserve Bank of Malawi (RBM) gross official foreign exchange reserves figure in USD, ' +
+      'and if available, Malawi\'s recent average monthly import bill in USD. Respond with ONLY a JSON object, no other text: ' +
+      '{"month":"YYYY-MM","amountUSD":0,"monthlyImportBillUSD":0,"source":"short description of where this came from"}. ' +
+      'If you cannot find the import bill figure, set it to null rather than guessing.',
+      true
+    );
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// -- Generic "extract structured fields from pasted text" endpoint --
+// `type` selects which schema to extract, matching the admin form it feeds.
+const EXTRACT_SCHEMAS = {
+  monthlyEntry: '{"month":"YYYY-MM","label":"e.g. Aug 2026","headline":0.0,"food":0.0,"nonFood":0.0,"source":"short source description"}',
+  policyRates: '{"policyRate":0.0,"lombardRate":0.0,"liquidityReserveLocal":0.0,"liquidityReserveForeign":0.0,"moneySupplyGrowth":0.0}',
+  mpc: '{"date":"YYYY-MM-DD","decision":"Held|Raised|Cut","changeBps":0,"reason":"one sentence, paraphrased, not a direct quote","source":"short source description","link":""}',
+  forexEarner: '{"year":2026,"category":"e.g. Tobacco","amountUSD":0,"source":"short source description"}',
+  regional: '{"country":"","headlineInflation":0.0,"policyRate":0.0,"asOf":"e.g. Jul 2026","source":"short source description"}',
+  cropPrice: '{"crop":"","year":2026,"pricePerKg":0.0,"unit":"kg","source":"short source description"}'
+};
+
+app.post('/api/admin/extract', requireAdmin, async (req, res) => {
+  const { type, text } = req.body;
+  const schema = EXTRACT_SCHEMAS[type];
+  if (!schema) return res.status(400).json({ error: 'Unknown extraction type.' });
+  if (!text || !text.trim()) return res.status(400).json({ error: 'Paste some text first.' });
+
+  try {
+    const result = await callGeminiJson(
+      `Extract data from this official release text into ONLY a JSON object (no other text), matching exactly this shape: ${schema}. ` +
+      'Use null for any field you cannot find in the text — never invent a number. ' +
+      'For any "reason" or narrative field, paraphrase in your own words rather than quoting directly. ' +
+      `Text to extract from:\n\n${text}`,
+      false
+    );
+    res.json({ ok: true, result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+
 // ================= STOCK MARKET (Malawi Stock Exchange) =================
 // Manually entered, same pattern as reserves/tbills — MSE's own data terms
 // restrict automated republishing, so figures are entered by hand each update
