@@ -8,9 +8,17 @@
 <link rel="stylesheet" href="style.css">
 <style>
   .adm-wrap { max-width: 900px; margin: 0 auto; padding: 20px 14px 60px; }
-  .adm-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
-  .adm-tab { padding: 8px 14px; border-radius: 20px; border: 1px solid #ECE4D2; background: #fff; font-size: 12px; font-weight: 700; color: #8F6620; cursor: pointer; }
-  .adm-tab.active { background: #8F6620; color: #fff; }
+
+  /* Grouped admin nav: one card per category, buttons laid out in a grid
+     so it reads as ordered columns instead of a single wrapping row. */
+  .adm-nav { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+  .adm-nav-group { background: #fff; border: 1px solid #ECE4D2; border-radius: 14px; padding: 12px 14px 14px; }
+  .adm-nav-group-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #9a8f74; margin: 2px 2px 10px; }
+  .adm-nav-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  @media (min-width: 560px) { .adm-nav-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 760px) { .adm-nav-grid { grid-template-columns: repeat(4, 1fr); } }
+  .adm-tab { width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid #ECE4D2; background: #FAF6EC; font-size: 12px; font-weight: 700; color: #8F6620; cursor: pointer; text-align: center; line-height: 1.25; }
+  .adm-tab.active { background: #8F6620; border-color: #8F6620; color: #fff; }
   .adm-section { display: none; background: #fff; border: 1px solid #ECE4D2; border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; }
   .adm-section.active { display: block; }
   .adm-section h3 { font-family: 'Fraunces'; margin-bottom: 6px; color: #8F6620; }
@@ -54,25 +62,50 @@
 
     <h2 style="font-family:'Fraunces'; margin-bottom:14px;">Admin Panel</h2>
 
-    <div class="adm-tabs">
-      <button class="adm-tab active" onclick="showTab('overview', this)">Overview</button>
-      <button class="adm-tab" onclick="showTab('monthly', this)">Monthly Entry</button>
-      <button class="adm-tab" onclick="showTab('history', this)">History</button>
-      <button class="adm-tab" onclick="showTab('other', this)">Other Indicators</button>
-      <button class="adm-tab" onclick="showTab('yearly', this)">Yearly Averages</button>
-      <button class="adm-tab" onclick="showTab('explainer', this)">Explainer Text</button>
-      <button class="adm-tab" onclick="showTab('faq', this)">FAQ Inbox</button>
-      <button class="adm-tab" onclick="showTab('contact', this)">Contact & Settings</button>
-      <button class="adm-tab" onclick="showTab('bulk', this)">Import / Export</button>
-      <button class="adm-tab" onclick="showTab('news', this)">News</button>
-      <button class="adm-tab" onclick="showTab('fx', this)">Exchange Rate</button>
-      <button class="adm-tab" onclick="showTab('tbills', this)">T-Bill Yields</button>
-      <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
-      <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
-      <button class="adm-tab" onclick="showTab('mpc', this)">MPC Meetings</button>
-      <button class="adm-tab" onclick="showTab('regional', this)">Regional Comparator</button>
-      <button class="adm-tab" onclick="showTab('forex', this)">Forex Earners</button>
-      <button class="adm-tab" onclick="showTab('cropprices', this)">Crop Prices</button>
+    <div class="adm-nav">
+
+      <div class="adm-nav-group">
+        <div class="adm-nav-group-title">Inflation Data</div>
+        <div class="adm-nav-grid">
+          <button class="adm-tab active" onclick="showTab('overview', this)">Overview</button>
+          <button class="adm-tab" onclick="showTab('monthly', this)">Monthly Entry</button>
+          <button class="adm-tab" onclick="showTab('history', this)">History</button>
+          <button class="adm-tab" onclick="showTab('other', this)">Other Indicators</button>
+          <button class="adm-tab" onclick="showTab('yearly', this)">Yearly Averages</button>
+        </div>
+      </div>
+
+      <div class="adm-nav-group">
+        <div class="adm-nav-group-title">Site Content</div>
+        <div class="adm-nav-grid">
+          <button class="adm-tab" onclick="showTab('explainer', this)">Explainer Text</button>
+          <button class="adm-tab" onclick="showTab('faq', this)">FAQ Inbox</button>
+          <button class="adm-tab" onclick="showTab('contact', this)">Contact & Settings</button>
+          <button class="adm-tab" onclick="showTab('bulk', this)">Import / Export</button>
+        </div>
+      </div>
+
+      <div class="adm-nav-group">
+        <div class="adm-nav-group-title">Markets & Policy</div>
+        <div class="adm-nav-grid">
+          <button class="adm-tab" onclick="showTab('news', this)">News</button>
+          <button class="adm-tab" onclick="showTab('fx', this)">Exchange Rate</button>
+          <button class="adm-tab" onclick="showTab('tbills', this)">T-Bill Yields</button>
+          <button class="adm-tab" onclick="showTab('omo', this)">OMO / Liquidity</button>
+          <button class="adm-tab" onclick="showTab('reserves', this)">Foreign Reserves</button>
+          <button class="adm-tab" onclick="showTab('mpc', this)">MPC Meetings</button>
+          <button class="adm-tab" onclick="showTab('regional', this)">Regional Comparator</button>
+        </div>
+      </div>
+
+      <div class="adm-nav-group">
+        <div class="adm-nav-group-title">Trade & Agriculture</div>
+        <div class="adm-nav-grid">
+          <button class="adm-tab" onclick="showTab('forex', this)">Forex Earners</button>
+          <button class="adm-tab" onclick="showTab('cropprices', this)">Crop Prices</button>
+        </div>
+      </div>
+
     </div>
 
     <!-- 1. OVERVIEW -->
@@ -1289,4 +1322,3 @@ Paprika,2026,3800,kg,Ministry of Agriculture minimum farm gate prices announceme
 </script>
 </body>
 </html>
-
