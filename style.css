@@ -5,7 +5,7 @@
 }
 * { box-sizing: border-box; margin:0; padding:0; }
 body { font-family:'Inter', sans-serif; background:#EFEAE0; color:var(--ink); padding:26px 14px 60px; }
-.wrap { max-width: 1180px; margin:0 auto; padding-bottom: 40px; }
+.wrap { max-width: 1180px; margin:0 auto; padding-bottom: 90px; }
 
 .banner {
   background: var(--panel); border:1px solid var(--border); border-left:5px solid var(--gold);
@@ -129,15 +129,15 @@ html, body { overflow-x: hidden; max-width: 100%; }
 
 /* ---- FAQ chat widget ---- */
 #faqToggle {
-  position: fixed; bottom: 20px; left: 20px; right: auto; z-index: 999;
-  width: 56px; height: 56px; border-radius: 50%;
+  position: fixed; bottom: 20px; right: 20px; left: auto; z-index: 999;
+  width: 48px; height: 48px; border-radius: 50%;
   background: #8F6620; color: #fff; border: none;
-  font-size: 22px; cursor: pointer;
+  font-size: 20px; cursor: pointer;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
 }
 #faqPanel {
   display: none; flex-direction: column;
-  position: fixed; bottom: 84px; left: 20px; right: auto; z-index: 999;
+  position: fixed; bottom: 76px; right: 20px; left: auto; z-index: 999;
   width: 300px; max-width: calc(100vw - 40px); height: 380px;
   background: #fff; border-radius: 14px; border: 1px solid #ECE4D2;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25); overflow: hidden;
