@@ -469,10 +469,10 @@
         <div id="cropExtractMsg"></div>
       </div>
 
-      <table class="adm-table">
-        <thead><tr><th>Crop</th><th>Year</th><th>Price</th><th>Source</th><th></th></tr></thead>
-        <tbody id="cropBody"></tbody>
-      </table>
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table class="adm-table" id="cropPivotTable" style="min-width:100%;"></table>
+      </div>
+      <div id="cropSourceNote" style="font-size:11.5px; color:#9a8f74; margin-top:6px;"></div>
       <div class="adm-row" style="margin-top:12px;">
         <div class="adm-field"><label>Crop</label><input id="cpCrop" placeholder="Tobacco"></div>
         <div class="adm-field"><label>Year</label><input id="cpYear" placeholder="2026"></div>
@@ -1175,16 +1175,54 @@
   }
 
   // ---- Crop Prices ----
+  // Rendered as a grid — crops down the side, years across the top — instead
+  // of one row per (crop, year), so it stays compact as more years get added.
   async function loadCropPrices() {
     const rows = await fetch('/api/crop-prices').then(r => r.json());
-    const body = document.getElementById('cropBody');
-    body.innerHTML = '';
-    rows.slice().reverse().forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.crop}</td><td>${r.year}</td><td>MWK ${r.pricePerKg.toLocaleString()}/${r.unit || 'kg'}</td><td>${r.source || ''}</td>
-        <td><button class="adm-btn danger" style="padding:4px 10px;font-size:11px;" onclick="deleteCropPrice(${r.year}, '${r.crop.replace(/'/g, "\\'")}')">Delete</button></td>`;
-      body.appendChild(tr);
+    renderCropPivot(rows);
+  }
+
+  function renderCropPivot(rows) {
+    const table = document.getElementById('cropPivotTable');
+    const noteEl = document.getElementById('cropSourceNote');
+
+    if (!rows.length) {
+      table.innerHTML = '<tr><td style="color:#9a8f74;padding:10px 0;">No entries yet — add one below.</td></tr>';
+      noteEl.textContent = '';
+      return;
+    }
+
+    const years = [...new Set(rows.map(r => r.year))].sort((a, b) => a - b);
+    const crops = [...new Set(rows.map(r => r.crop))].sort((a, b) => a.localeCompare(b));
+    const byKey = {};
+    rows.forEach(r => { byKey[r.crop + '|' + r.year] = r; });
+    window._cropByKey = byKey; // used by showCropCell below
+
+    let html = '<thead><tr><th>Crop</th>' + years.map(y => `<th style="text-align:center;">${y}</th>`).join('') + '</tr></thead><tbody>';
+    crops.forEach(crop => {
+      html += `<tr><td style="font-weight:700; white-space:nowrap;">${crop}</td>`;
+      years.forEach(y => {
+        const r = byKey[crop + '|' + y];
+        if (r) {
+          html += `<td style="text-align:center;"><button onclick="showCropCell('${crop.replace(/'/g, "\\'")}', ${y})" style="background:transparent; border:none; color:#8F6620; font-weight:700; font-family:'Fraunces'; font-size:13px; cursor:pointer; padding:4px 6px;">${r.pricePerKg.toLocaleString()}</button></td>`;
+        } else {
+          html += '<td style="text-align:center; color:#d9d0ba;">—</td>';
+        }
+      });
+      html += '</tr>';
     });
+    html += '</tbody>';
+    table.innerHTML = html;
+    noteEl.textContent = 'Prices shown in MWK/kg. Tap a price to see its source or delete it.';
+  }
+
+  function showCropCell(crop, year) {
+    const r = window._cropByKey && window._cropByKey[crop + '|' + year];
+    if (!r) return;
+    const detail = `${crop}, ${year}\nMWK ${r.pricePerKg.toLocaleString()} / ${r.unit || 'kg'}\nSource: ${r.source || '(none entered)'}`;
+    if (confirm(detail + '\n\nTap OK to delete this entry, Cancel to keep it.')) {
+      deleteCropPrice(year, crop);
+    }
   }
   async function saveCropPrice() {
     const body = {
@@ -1209,4 +1247,3 @@
 </script>
 </body>
 </html>
-
