@@ -31,6 +31,10 @@
   .adm-stat { display: inline-block; background: #FAF6EC; border-radius: 10px; padding: 14px 18px; margin-right: 10px; margin-bottom: 10px; }
   .adm-stat .n { font-family: 'Fraunces'; font-size: 24px; font-weight: 800; color: #8F6620; }
   .adm-stat .l { font-size: 11px; color: #7a6f52; text-transform: uppercase; }
+  .adm-ai-box { background: #FAF6EC; border: 1px dashed #d9c48f; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .adm-ai-box .title { font-size: 12px; font-weight: 700; color: #8F6620; text-transform: uppercase; margin-bottom: 6px; }
+  .adm-ai-box textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ECE4D2; font-family: 'Inter'; font-size: 13px; margin-bottom: 8px; }
+  .adm-ai-box .note { font-size: 11px; color: #9a8f74; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -83,6 +87,15 @@
     <div class="adm-section" id="tab-monthly">
       <h3>Add / Update This Month's Data</h3>
       <div class="sub">Once a month, enter the new RBM/NSO release here.</div>
+
+      <div class="adm-ai-box">
+        <div class="title">✨ Paste the release text — AI fills the form below</div>
+        <textarea id="monthlyPasteBox" rows="5" placeholder="Paste the NSO/RBM CPI release text here..."></textarea>
+        <button class="adm-btn secondary" onclick="extractAndFill('monthlyEntry','monthlyPasteBox','monthlyExtractMsg', fillMonthlyEntry)">Extract & Fill Fields</button>
+        <div id="monthlyExtractMsg"></div>
+        <div class="note">Always double-check the filled numbers against the release before saving.</div>
+      </div>
+
       <div class="adm-row">
         <div class="adm-field"><label>Month (e.g. 2026-08)</label><input id="fMonth" placeholder="2026-08"></div>
         <div class="adm-field"><label>Label (e.g. Aug 2026)</label><input id="fLabel" placeholder="Aug 2026"></div>
@@ -115,6 +128,12 @@
       <div class="sub">These feed the "Monetary Policy Rates" and "Urban vs Rural" panels on the public site.</div>
 
       <h4 style="margin:14px 0 8px; font-size:13px; color:#7a6f52;">Policy Rates</h4>
+      <div class="adm-ai-box">
+        <div class="title">✨ Paste the MPC statement — AI fills the policy rate fields below</div>
+        <textarea id="policyPasteBox" rows="4" placeholder="Paste the MPC statement text here..."></textarea>
+        <button class="adm-btn secondary" onclick="extractAndFill('policyRates','policyPasteBox','policyExtractMsg', fillPolicyRates)">Extract & Fill Fields</button>
+        <div id="policyExtractMsg"></div>
+      </div>
       <div class="adm-row">
         <div class="adm-field"><label>Policy Rate (%)</label><input type="number" step="0.1" id="pRate"></div>
         <div class="adm-field"><label>Lombard Rate (%)</label><input type="number" step="0.1" id="pLombard"></div>
@@ -237,6 +256,9 @@
     <!-- 11. T-BILLS -->
     <div class="adm-section" id="tab-tbills">
       <h3>Treasury Bill / Bond Yields</h3>
+      <div class="sub">There's no free structured feed for this, so "Fetch Latest Now" asks AI to search the web — treat the result as a first draft to check, not a guaranteed-accurate figure.</div>
+      <button class="adm-btn secondary" onclick="fetchTbillsNow()">Fetch Latest Now (AI web search)</button>
+      <div id="tbillFetchMsg"></div>
       <table class="adm-table">
         <thead><tr><th>Date</th><th>Tenor</th><th>Yield</th><th></th></tr></thead>
         <tbody id="tbillBody"></tbody>
@@ -279,6 +301,9 @@
     <!-- 13. FOREIGN RESERVES -->
     <div class="adm-section" id="tab-reserves">
       <h3>Foreign Reserves</h3>
+      <div class="sub">There's no free structured feed for this either — "Fetch Latest Now" asks AI to search the web and pre-fills the form below for you to check before saving.</div>
+      <button class="adm-btn secondary" onclick="fetchReservesNow()">Fetch Latest Now (AI web search)</button>
+      <div id="reservesFetchMsg"></div>
       <table class="adm-table">
         <thead><tr><th>Month</th><th>Amount (USD)</th><th></th></tr></thead>
         <tbody id="reservesBody"></tbody>
@@ -324,6 +349,13 @@
       <h3>MPC Meeting Tracker</h3>
       <div class="sub">Each row is one Monetary Policy Committee meeting. "Reason" should be a short paraphrase of RBM's own statement — not a direct quote.</div>
 
+      <div class="adm-ai-box">
+        <div class="title">✨ Paste the MPC statement — AI fills the meeting fields below</div>
+        <textarea id="mpcPasteBox" rows="5" placeholder="Paste the MPC statement text here..."></textarea>
+        <button class="adm-btn secondary" onclick="extractAndFill('mpc','mpcPasteBox','mpcExtractMsg', fillMpc)">Extract & Fill Fields</button>
+        <div id="mpcExtractMsg"></div>
+      </div>
+
       <h4 style="margin:0 0 8px; font-size:13px; color:#7a6f52;">Next Scheduled Meeting</h4>
       <div class="adm-row">
         <div class="adm-field"><label>Next Meeting Date</label><input id="mpcNextDate" placeholder="2026-10-15"></div>
@@ -360,6 +392,14 @@
     <div class="adm-section" id="tab-regional">
       <h3>Regional Comparator</h3>
       <div class="sub">One row per country. Include Malawi itself plus 2-3 regional peers (e.g. Zambia, Tanzania, Mozambique). Figures should come from each country's own central bank or the IMF, and each country's source should be entered separately since they come from different places.</div>
+
+      <div class="adm-ai-box">
+        <div class="title">✨ Paste a report/press mention — AI fills the country fields below</div>
+        <textarea id="regionalPasteBox" rows="4" placeholder="Paste text mentioning a country's inflation and policy rate..."></textarea>
+        <button class="adm-btn secondary" onclick="extractAndFill('regional','regionalPasteBox','regionalExtractMsg', fillRegional)">Extract & Fill Fields</button>
+        <div id="regionalExtractMsg"></div>
+      </div>
+
       <table class="adm-table">
         <thead><tr><th>Country</th><th>Headline Inflation</th><th>Policy Rate</th><th>As Of</th><th></th></tr></thead>
         <tbody id="regionalBody"></tbody>
@@ -381,6 +421,15 @@
     <div class="adm-section" id="tab-forex">
       <h3>Foreign Exchange Earners</h3>
       <div class="sub">One row per year + export category (e.g. 2025 / Tobacco / $412,000,000). Feeds the Dashboard's stacked bar panel and the Tools "Forex Earners Explorer". Source should be the RBM balance of payments release, NSO trade statistics, or Ministry of Trade figures for that year.</div>
+
+      <div class="adm-ai-box">
+        <div class="title">✨ Paste the balance-of-payments text — AI fills one category's fields below</div>
+        <textarea id="forexPasteBox" rows="4" placeholder="Paste the relevant paragraph, e.g. mentioning tobacco export earnings..."></textarea>
+        <button class="adm-btn secondary" onclick="extractAndFill('forexEarner','forexPasteBox','forexExtractMsg', fillForexEarner)">Extract & Fill Fields</button>
+        <div id="forexExtractMsg"></div>
+        <div class="note">Only pulls one category per paste — for many categories at once, use Bulk Import below instead.</div>
+      </div>
+
       <table class="adm-table">
         <thead><tr><th>Year</th><th>Category</th><th>Amount (USD)</th><th>Source</th><th></th></tr></thead>
         <tbody id="forexBody"></tbody>
@@ -412,6 +461,14 @@
     <div class="adm-section" id="tab-cropprices">
       <h3>Farmer Crop Prices</h3>
       <div class="sub">One row per crop + year. This is the average price per kg actually paid, as published — not cost of production or expected profit. Feeds the Tools "Farmer Price Trends" tab.</div>
+
+      <div class="adm-ai-box">
+        <div class="title">✨ Paste the report text — AI fills the crop price fields below</div>
+        <textarea id="cropPasteBox" rows="4" placeholder="Paste the relevant paragraph, e.g. mentioning tobacco farmgate price..."></textarea>
+        <button class="adm-btn secondary" onclick="extractAndFill('cropPrice','cropPasteBox','cropExtractMsg', fillCropPrice)">Extract & Fill Fields</button>
+        <div id="cropExtractMsg"></div>
+      </div>
+
       <table class="adm-table">
         <thead><tr><th>Crop</th><th>Year</th><th>Price</th><th>Source</th><th></th></tr></thead>
         <tbody id="cropBody"></tbody>
@@ -479,6 +536,72 @@
     document.getElementById('overviewWarning').innerHTML = hasCurrent
       ? '<div class="adm-msg ok">This month\'s data is entered.</div>'
       : `<div class="adm-msg err">This month (${currentMonthKey}) is missing — add it in the Monthly Entry tab.</div>`;
+  }
+
+  // ---- AI-assisted extraction (shared helper) ----
+  async function extractAndFill(type, textareaId, msgId, fillFn) {
+    const text = document.getElementById(textareaId).value.trim();
+    const msgEl = document.getElementById(msgId);
+    if (!text) { msgEl.innerHTML = '<div class="adm-msg err">Paste the release text first.</div>'; return; }
+    msgEl.innerHTML = '<div class="adm-msg ok">Reading...</div>';
+    try {
+      const res = await fetch('/api/admin/extract', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ type, text }) });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Extraction failed');
+      fillFn(data.result);
+      msgEl.innerHTML = '<div class="adm-msg ok">Filled in below — check the numbers, then save.</div>';
+    } catch (err) {
+      msgEl.innerHTML = `<div class="adm-msg err">${err.message}</div>`;
+    }
+  }
+
+  function fillMonthlyEntry(r) {
+    if (r.month) document.getElementById('fMonth').value = r.month;
+    if (r.label) document.getElementById('fLabel').value = r.label;
+    if (r.headline != null) document.getElementById('fHeadline').value = r.headline;
+    if (r.food != null) document.getElementById('fFood').value = r.food;
+    if (r.nonFood != null) document.getElementById('fNonFood').value = r.nonFood;
+    if (r.source) document.getElementById('fSource').value = r.source;
+  }
+
+  function fillPolicyRates(r) {
+    if (r.policyRate != null) document.getElementById('pRate').value = r.policyRate;
+    if (r.lombardRate != null) document.getElementById('pLombard').value = r.lombardRate;
+    if (r.liquidityReserveLocal != null) document.getElementById('pLocal').value = r.liquidityReserveLocal;
+    if (r.liquidityReserveForeign != null) document.getElementById('pForeign').value = r.liquidityReserveForeign;
+    if (r.moneySupplyGrowth != null) document.getElementById('pMoney').value = r.moneySupplyGrowth;
+  }
+
+  function fillMpc(r) {
+    if (r.date) document.getElementById('mpcDate').value = r.date;
+    if (r.decision) document.getElementById('mpcDecision').value = r.decision;
+    if (r.changeBps != null) document.getElementById('mpcChangeBps').value = r.changeBps;
+    if (r.reason) document.getElementById('mpcReason').value = r.reason;
+    if (r.source) document.getElementById('mpcSource').value = r.source;
+    if (r.link) document.getElementById('mpcLink').value = r.link;
+  }
+
+  function fillRegional(r) {
+    if (r.country) document.getElementById('regCountry').value = r.country;
+    if (r.headlineInflation != null) document.getElementById('regInflation').value = r.headlineInflation;
+    if (r.policyRate != null) document.getElementById('regPolicyRate').value = r.policyRate;
+    if (r.asOf) document.getElementById('regAsOf').value = r.asOf;
+    if (r.source) document.getElementById('regSource').value = r.source;
+  }
+
+  function fillForexEarner(r) {
+    if (r.year != null) document.getElementById('fxeYear').value = r.year;
+    if (r.category) document.getElementById('fxeCategory').value = r.category;
+    if (r.amountUSD != null) document.getElementById('fxeAmount').value = r.amountUSD;
+    if (r.source) document.getElementById('fxeSource').value = r.source;
+  }
+
+  function fillCropPrice(r) {
+    if (r.crop) document.getElementById('cpCrop').value = r.crop;
+    if (r.year != null) document.getElementById('cpYear').value = r.year;
+    if (r.pricePerKg != null) document.getElementById('cpPrice').value = r.pricePerKg;
+    if (r.unit) document.getElementById('cpUnit').value = r.unit;
+    if (r.source) document.getElementById('cpSource').value = r.source;
   }
 
   // ---- Monthly entry ----
@@ -749,6 +872,40 @@
     loadTbills();
   }
 
+  // AI-assisted fetch — searches the web, then lets the admin pick which
+  // tenor to load into the form above before saving.
+  async function fetchTbillsNow() {
+    const msgEl = document.getElementById('tbillFetchMsg');
+    msgEl.innerHTML = '<div class="adm-msg ok">Searching...</div>';
+    try {
+      const res = await fetch('/api/fetch-tbills', { headers: authHeaders() });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      const r = data.result;
+      window._fetchedTbills = r;
+      if (!r.results || !r.results.length) {
+        msgEl.innerHTML = '<div class="adm-msg err">Could not find recent figures — enter manually below.</div>';
+        return;
+      }
+      let html = `<div class="adm-msg ok">Found (as of ${r.date || 'unknown date'}) — click a tenor to load it into the form below, check it, then Add Entry.</div><div style="margin-top:8px;">`;
+      r.results.forEach((row, i) => {
+        html += `<button class="adm-btn secondary" style="margin:0 6px 6px 0;padding:6px 12px;font-size:12px;" onclick="useFetchedTbill(${i})">${row.tenor}: ${row.yield}%</button>`;
+      });
+      html += '</div>';
+      msgEl.innerHTML = html;
+    } catch (err) {
+      msgEl.innerHTML = `<div class="adm-msg err">${err.message}</div>`;
+    }
+  }
+  function useFetchedTbill(i) {
+    const r = window._fetchedTbills;
+    const row = r.results[i];
+    document.getElementById('tbDate').value = r.date || '';
+    document.getElementById('tbTenor').value = row.tenor;
+    document.getElementById('tbYield').value = row.yield;
+    document.getElementById('tbSource').value = r.source || 'AI web search — verify before relying on this';
+  }
+
   // ---- OMO ----
   async function loadOmo() {
     const rows = await fetch('/api/omo').then(r => r.json());
@@ -798,6 +955,25 @@
   async function deleteReserves(month) {
     await fetch('/api/admin/reserves/' + month, { method: 'DELETE', headers: authHeaders() });
     loadReserves();
+  }
+
+  // AI-assisted fetch — searches the web and pre-fills the form for review.
+  async function fetchReservesNow() {
+    const msgEl = document.getElementById('reservesFetchMsg');
+    msgEl.innerHTML = '<div class="adm-msg ok">Searching...</div>';
+    try {
+      const res = await fetch('/api/fetch-reserves', { headers: authHeaders() });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      const r = data.result;
+      document.getElementById('resMonth').value = r.month || '';
+      document.getElementById('resAmount').value = r.amountUSD ?? '';
+      document.getElementById('resImportBill').value = r.monthlyImportBillUSD ?? '';
+      document.getElementById('resSource').value = r.source || 'AI web search — verify before relying on this';
+      msgEl.innerHTML = '<div class="adm-msg ok">Filled in below — check the numbers, then Save Entry.</div>';
+    } catch (err) {
+      msgEl.innerHTML = `<div class="adm-msg err">${err.message}</div>`;
+    }
   }
 
 
@@ -1033,3 +1209,4 @@
 </script>
 </body>
 </html>
+
