@@ -88,13 +88,7 @@
       <h3>Add / Update This Month's Data</h3>
       <div class="sub">Once a month, enter the new RBM/NSO release here.</div>
 
-      <div class="adm-ai-box">
-        <div class="title">✨ Paste the release text — AI fills the form below</div>
-        <textarea id="monthlyPasteBox" rows="5" placeholder="Paste the NSO/RBM CPI release text here..."></textarea>
-        <button class="adm-btn secondary" onclick="extractAndFill('monthlyEntry','monthlyPasteBox','monthlyExtractMsg', fillMonthlyEntry)">Extract & Fill Fields</button>
-        <div id="monthlyExtractMsg"></div>
-        <div class="note">Always double-check the filled numbers against the release before saving.</div>
-      </div>
+      <div class="sub" style="margin-top:-6px;">Tip: for adding several months at once, use the CSV bulk importer in the "Import / Export" tab instead of typing each one here.</div>
 
       <div class="adm-row">
         <div class="adm-field"><label>Month (e.g. 2026-08)</label><input id="fMonth" placeholder="2026-08"></div>
@@ -128,12 +122,6 @@
       <div class="sub">These feed the "Monetary Policy Rates" and "Urban vs Rural" panels on the public site.</div>
 
       <h4 style="margin:14px 0 8px; font-size:13px; color:#7a6f52;">Policy Rates</h4>
-      <div class="adm-ai-box">
-        <div class="title">✨ Paste the MPC statement — AI fills the policy rate fields below</div>
-        <textarea id="policyPasteBox" rows="4" placeholder="Paste the MPC statement text here..."></textarea>
-        <button class="adm-btn secondary" onclick="extractAndFill('policyRates','policyPasteBox','policyExtractMsg', fillPolicyRates)">Extract & Fill Fields</button>
-        <div id="policyExtractMsg"></div>
-      </div>
       <div class="adm-row">
         <div class="adm-field"><label>Policy Rate (%)</label><input type="number" step="0.1" id="pRate"></div>
         <div class="adm-field"><label>Lombard Rate (%)</label><input type="number" step="0.1" id="pLombard"></div>
@@ -349,13 +337,6 @@
       <h3>MPC Meeting Tracker</h3>
       <div class="sub">Each row is one Monetary Policy Committee meeting. "Reason" should be a short paraphrase of RBM's own statement — not a direct quote.</div>
 
-      <div class="adm-ai-box">
-        <div class="title">✨ Paste the MPC statement — AI fills the meeting fields below</div>
-        <textarea id="mpcPasteBox" rows="5" placeholder="Paste the MPC statement text here..."></textarea>
-        <button class="adm-btn secondary" onclick="extractAndFill('mpc','mpcPasteBox','mpcExtractMsg', fillMpc)">Extract & Fill Fields</button>
-        <div id="mpcExtractMsg"></div>
-      </div>
-
       <h4 style="margin:0 0 8px; font-size:13px; color:#7a6f52;">Next Scheduled Meeting</h4>
       <div class="adm-row">
         <div class="adm-field"><label>Next Meeting Date</label><input id="mpcNextDate" placeholder="2026-10-15"></div>
@@ -386,19 +367,22 @@
       </div>
       <button class="adm-btn" onclick="saveMpc()">Add Meeting</button>
       <div id="mpcMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (date,decision,changeBps,reason,source,link) to import many meetings at once — one row per line. Leave changeBps blank when the decision was "Held".</div>
+      <textarea id="mpcBulkBox" rows="6" placeholder="2026-08-15,Held,,RBM cited persistent food inflation pressure.,RBM MPC Statement Aug 2026,
+2026-06-12,Cut,50,RBM noted easing inflation and room to support growth.,RBM MPC Statement Jun 2026," style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportMpc()">Import Rows</button>
+        <span id="mpcBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="mpcBulkMsg"></div>
     </div>
 
     <!-- 16. REGIONAL COMPARATOR -->
     <div class="adm-section" id="tab-regional">
       <h3>Regional Comparator</h3>
       <div class="sub">One row per country. Include Malawi itself plus 2-3 regional peers (e.g. Zambia, Tanzania, Mozambique). Figures should come from each country's own central bank or the IMF, and each country's source should be entered separately since they come from different places.</div>
-
-      <div class="adm-ai-box">
-        <div class="title">✨ Paste a report/press mention — AI fills the country fields below</div>
-        <textarea id="regionalPasteBox" rows="4" placeholder="Paste text mentioning a country's inflation and policy rate..."></textarea>
-        <button class="adm-btn secondary" onclick="extractAndFill('regional','regionalPasteBox','regionalExtractMsg', fillRegional)">Extract & Fill Fields</button>
-        <div id="regionalExtractMsg"></div>
-      </div>
 
       <table class="adm-table">
         <thead><tr><th>Country</th><th>Headline Inflation</th><th>Policy Rate</th><th>As Of</th><th></th></tr></thead>
@@ -415,20 +399,23 @@
       </div>
       <button class="adm-btn" onclick="saveRegional()">Save Country</button>
       <div id="regionalMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (country,headlineInflation,policyRate,asOf,source) to import many at once — one row per line.</div>
+      <textarea id="regionalBulkBox" rows="6" placeholder="Zambia,12.7,14.5,Jul 2026,Bank of Zambia
+Tanzania,3.2,6.0,Jul 2026,Bank of Tanzania
+Mozambique,3.8,12.25,Jul 2026,Bank of Mozambique" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportRegional()">Import Rows</button>
+        <span id="regionalBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="regionalBulkMsg"></div>
     </div>
 
     <!-- 17. FOREX EARNERS -->
     <div class="adm-section" id="tab-forex">
       <h3>Foreign Exchange Earners</h3>
       <div class="sub">One row per year + export category (e.g. 2025 / Tobacco / $412,000,000). Feeds the Dashboard's stacked bar panel and the Tools "Forex Earners Explorer". Source should be the RBM balance of payments release, NSO trade statistics, or Ministry of Trade figures for that year.</div>
-
-      <div class="adm-ai-box">
-        <div class="title">✨ Paste the balance-of-payments text — AI fills one category's fields below</div>
-        <textarea id="forexPasteBox" rows="4" placeholder="Paste the relevant paragraph, e.g. mentioning tobacco export earnings..."></textarea>
-        <button class="adm-btn secondary" onclick="extractAndFill('forexEarner','forexPasteBox','forexExtractMsg', fillForexEarner)">Extract & Fill Fields</button>
-        <div id="forexExtractMsg"></div>
-        <div class="note">Only pulls one category per paste — for many categories at once, use Bulk Import below instead.</div>
-      </div>
 
       <table class="adm-table">
         <thead><tr><th>Year</th><th>Category</th><th>Amount (USD)</th><th>Source</th><th></th></tr></thead>
@@ -462,13 +449,6 @@
       <h3>Farmer Crop Prices</h3>
       <div class="sub">One row per crop + year. This is the average price per kg actually paid, as published — not cost of production or expected profit. Feeds the Tools "Farmer Price Trends" tab.</div>
 
-      <div class="adm-ai-box">
-        <div class="title">✨ Paste the report text — AI fills the crop price fields below</div>
-        <textarea id="cropPasteBox" rows="4" placeholder="Paste the relevant paragraph, e.g. mentioning tobacco farmgate price..."></textarea>
-        <button class="adm-btn secondary" onclick="extractAndFill('cropPrice','cropPasteBox','cropExtractMsg', fillCropPrice)">Extract & Fill Fields</button>
-        <div id="cropExtractMsg"></div>
-      </div>
-
       <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
         <table class="adm-table" id="cropPivotTable" style="min-width:100%;"></table>
       </div>
@@ -484,6 +464,17 @@
       </div>
       <button class="adm-btn" onclick="saveCropPrice()">Save Entry</button>
       <div id="cropMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (crop,year,pricePerKg,unit,source) to import many at once — one row per line.</div>
+      <textarea id="cropBulkBox" rows="8" placeholder="Maize,2026,900,kg,Ministry of Agriculture minimum farm gate prices announcement 14 April 2026
+Rice (paddy),2026,1500,kg,Ministry of Agriculture minimum farm gate prices announcement 14 April 2026
+Paprika,2026,3800,kg,Ministry of Agriculture minimum farm gate prices announcement 14 April 2026" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportCropPrices()">Import Rows</button>
+        <span id="cropBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="cropBulkMsg"></div>
     </div>
 
   </div>
@@ -538,70 +529,121 @@
       : `<div class="adm-msg err">This month (${currentMonthKey}) is missing — add it in the Monthly Entry tab.</div>`;
   }
 
-  // ---- AI-assisted extraction (shared helper) ----
-  async function extractAndFill(type, textareaId, msgId, fillFn) {
-    const text = document.getElementById(textareaId).value.trim();
-    const msgEl = document.getElementById(msgId);
-    if (!text) { msgEl.innerHTML = '<div class="adm-msg err">Paste the release text first.</div>'; return; }
-    msgEl.innerHTML = '<div class="adm-msg ok">Reading...</div>';
-    try {
-      const res = await fetch('/api/admin/extract', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ type, text }) });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Extraction failed');
-      fillFn(data.result);
-      msgEl.innerHTML = '<div class="adm-msg ok">Filled in below — check the numbers, then save.</div>';
-    } catch (err) {
-      msgEl.innerHTML = `<div class="adm-msg err">${err.message}</div>`;
+  // ---- Bulk import helpers ----
+  // Shared pattern used by MPC / Regional / Crop Prices bulk import below:
+  // parse pasted CSV client-side, then save each row by calling the existing
+  // single-entry admin endpoint in sequence. No AI involved — this is a
+  // straightforward paste-many-rows-at-once tool, same as Forex Earners already had.
+
+  async function runBulkImport(rawText, parseLine, endpoint, progressElId, msgElId, expectedFormat, reloadFn) {
+    const progressEl = document.getElementById(progressElId);
+    const msgEl = document.getElementById(msgElId);
+    const raw = rawText.trim();
+    if (!raw) return;
+
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    const rows = [];
+    const badLines = [];
+    lines.forEach((line, i) => {
+      const parsed = parseLine(line);
+      if (parsed) rows.push(parsed);
+      else badLines.push(i + 1);
+    });
+
+    if (rows.length === 0) {
+      msgEl.innerHTML = `<div class="adm-msg err">No valid rows found. Expected: ${expectedFormat}</div>`;
+      return;
     }
+
+    let saved = 0, failed = 0;
+    for (let i = 0; i < rows.length; i++) {
+      progressEl.textContent = `Saving ${i + 1} of ${rows.length}...`;
+      try {
+        const res = await fetch(endpoint, { method: 'POST', headers: authHeaders(), body: JSON.stringify(rows[i]) });
+        if (res.ok) saved++; else failed++;
+      } catch (e) {
+        failed++;
+      }
+    }
+    progressEl.textContent = '';
+
+    let summary = `<div class="adm-msg ${failed ? 'err' : 'ok'}">Imported ${saved} of ${rows.length} row(s).`;
+    if (failed) summary += ` ${failed} failed to save.`;
+    if (badLines.length) summary += ` Skipped unparseable line(s): ${badLines.join(', ')}.`;
+    summary += '</div>';
+    msgEl.innerHTML = summary;
+
+    if (reloadFn) reloadFn();
   }
 
-  function fillMonthlyEntry(r) {
-    if (r.month) document.getElementById('fMonth').value = r.month;
-    if (r.label) document.getElementById('fLabel').value = r.label;
-    if (r.headline != null) document.getElementById('fHeadline').value = r.headline;
-    if (r.food != null) document.getElementById('fFood').value = r.food;
-    if (r.nonFood != null) document.getElementById('fNonFood').value = r.nonFood;
-    if (r.source) document.getElementById('fSource').value = r.source;
+  // -- MPC Meetings bulk import: date,decision,changeBps,reason,source,link --
+  function parseMpcBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 3) return null;
+    const date = parts[0].trim();
+    const decision = parts[1].trim();
+    const changeBps = parts[2].trim() ? parseFloat(parts[2].trim()) : null;
+    const reason = (parts[3] || '').trim();
+    const source = (parts[4] || '').trim();
+    const link = parts.slice(5).join(',').trim();
+    if (!date || !decision || !reason) return null;
+    return { date, decision, changeBps, reason, source, link };
+  }
+  function bulkImportMpc() {
+    runBulkImport(
+      document.getElementById('mpcBulkBox').value,
+      parseMpcBulkLine,
+      '/api/admin/mpc',
+      'mpcBulkProgress', 'mpcBulkMsg',
+      'date,decision,changeBps,reason,source,link',
+      () => { document.getElementById('mpcBulkBox').value = ''; loadMpc(); }
+    );
   }
 
-  function fillPolicyRates(r) {
-    if (r.policyRate != null) document.getElementById('pRate').value = r.policyRate;
-    if (r.lombardRate != null) document.getElementById('pLombard').value = r.lombardRate;
-    if (r.liquidityReserveLocal != null) document.getElementById('pLocal').value = r.liquidityReserveLocal;
-    if (r.liquidityReserveForeign != null) document.getElementById('pForeign').value = r.liquidityReserveForeign;
-    if (r.moneySupplyGrowth != null) document.getElementById('pMoney').value = r.moneySupplyGrowth;
+  // -- Regional Comparator bulk import: country,headlineInflation,policyRate,asOf,source --
+  function parseRegionalBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 1) return null;
+    const country = parts[0].trim();
+    const headlineInflation = parts[1] && parts[1].trim() ? parseFloat(parts[1].trim()) : null;
+    const policyRate = parts[2] && parts[2].trim() ? parseFloat(parts[2].trim()) : null;
+    const asOf = (parts[3] || '').trim();
+    const source = parts.slice(4).join(',').trim();
+    if (!country) return null;
+    return { country, headlineInflation, policyRate, asOf, source };
+  }
+  function bulkImportRegional() {
+    runBulkImport(
+      document.getElementById('regionalBulkBox').value,
+      parseRegionalBulkLine,
+      '/api/admin/regional',
+      'regionalBulkProgress', 'regionalBulkMsg',
+      'country,headlineInflation,policyRate,asOf,source',
+      () => { document.getElementById('regionalBulkBox').value = ''; loadRegional(); }
+    );
   }
 
-  function fillMpc(r) {
-    if (r.date) document.getElementById('mpcDate').value = r.date;
-    if (r.decision) document.getElementById('mpcDecision').value = r.decision;
-    if (r.changeBps != null) document.getElementById('mpcChangeBps').value = r.changeBps;
-    if (r.reason) document.getElementById('mpcReason').value = r.reason;
-    if (r.source) document.getElementById('mpcSource').value = r.source;
-    if (r.link) document.getElementById('mpcLink').value = r.link;
+  // -- Crop Prices bulk import: crop,year,pricePerKg,unit,source --
+  function parseCropBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 3) return null;
+    const crop = parts[0].trim();
+    const year = parseInt(parts[1].trim(), 10);
+    const pricePerKg = parseFloat(parts[2].trim());
+    const unit = (parts[3] || '').trim() || 'kg';
+    const source = parts.slice(4).join(',').trim();
+    if (!crop || !year || isNaN(pricePerKg)) return null;
+    return { crop, year, pricePerKg, unit, source };
   }
-
-  function fillRegional(r) {
-    if (r.country) document.getElementById('regCountry').value = r.country;
-    if (r.headlineInflation != null) document.getElementById('regInflation').value = r.headlineInflation;
-    if (r.policyRate != null) document.getElementById('regPolicyRate').value = r.policyRate;
-    if (r.asOf) document.getElementById('regAsOf').value = r.asOf;
-    if (r.source) document.getElementById('regSource').value = r.source;
-  }
-
-  function fillForexEarner(r) {
-    if (r.year != null) document.getElementById('fxeYear').value = r.year;
-    if (r.category) document.getElementById('fxeCategory').value = r.category;
-    if (r.amountUSD != null) document.getElementById('fxeAmount').value = r.amountUSD;
-    if (r.source) document.getElementById('fxeSource').value = r.source;
-  }
-
-  function fillCropPrice(r) {
-    if (r.crop) document.getElementById('cpCrop').value = r.crop;
-    if (r.year != null) document.getElementById('cpYear').value = r.year;
-    if (r.pricePerKg != null) document.getElementById('cpPrice').value = r.pricePerKg;
-    if (r.unit) document.getElementById('cpUnit').value = r.unit;
-    if (r.source) document.getElementById('cpSource').value = r.source;
+  function bulkImportCropPrices() {
+    runBulkImport(
+      document.getElementById('cropBulkBox').value,
+      parseCropBulkLine,
+      '/api/admin/crop-prices',
+      'cropBulkProgress', 'cropBulkMsg',
+      'crop,year,pricePerKg,unit,source',
+      () => { document.getElementById('cropBulkBox').value = ''; loadCropPrices(); }
+    );
   }
 
   // ---- Monthly entry ----
@@ -1247,3 +1289,4 @@
 </script>
 </body>
 </html>
+
