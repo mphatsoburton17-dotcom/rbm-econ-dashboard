@@ -206,6 +206,17 @@
       <button class="adm-btn" onclick="addYearlyRow()">Add Year</button>
       <button class="adm-btn secondary" onclick="saveYearly()">Save All Yearly Averages</button>
       <div id="yearlyMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (year,avg,source) to add many years at once — one row per line. This adds them to the table above; click "Save All Yearly Averages" afterward to save.</div>
+      <textarea id="yearlyBulkBox" rows="6" placeholder="2020,9.4,World Bank
+2021,9.3,World Bank
+2022,20.8,World Bank" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportYearly()">Import Rows</button>
+        <span id="yearlyBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="yearlyBulkMsg"></div>
     </div>
 
     <!-- 6. EXPLAINER -->
@@ -296,6 +307,17 @@
       </div>
       <button class="adm-btn" onclick="saveTbill()">Add Entry</button>
       <div id="tbillMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (date,tenor,yield,source) to import many auctions at once — one row per line.</div>
+      <textarea id="tbillBulkBox" rows="6" placeholder="2026-08-01,91-day,18.5,RBM Treasury Bill Auction
+2026-08-01,182-day,19.2,RBM Treasury Bill Auction
+2026-08-01,364-day,20.1,RBM Treasury Bill Auction" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportTbills()">Import Rows</button>
+        <span id="tbillBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="tbillBulkMsg"></div>
     </div>
 
     <!-- 12. OMO -->
@@ -317,6 +339,17 @@
       </div>
       <button class="adm-btn" onclick="saveOmo()">Add Entry</button>
       <div id="omoMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (date,action,amount,source) to import many operations at once — one row per line. Leave amount blank if not applicable.</div>
+      <textarea id="omoBulkBox" rows="6" placeholder="2026-08-20,Injecting liquidity,15000000000,RBM OMO Statement
+2026-08-13,No major operation,,RBM OMO Statement
+2026-08-06,Withdrawing liquidity,8000000000,RBM OMO Statement" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportOmo()">Import Rows</button>
+        <span id="omoBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="omoBulkMsg"></div>
     </div>
 
     <!-- 13. FOREIGN RESERVES -->
@@ -340,6 +373,17 @@
       </div>
       <button class="adm-btn" onclick="saveReserves()">Save Entry</button>
       <div id="reservesMsg"></div>
+
+      <h4 style="margin:24px 0 8px; font-size:13px; color:#7a6f52;">Bulk Import</h4>
+      <div class="sub">Paste CSV rows (month,amountUSD,source,monthlyImportBillUSD,importBillSource) to import many months at once — one row per line. Leave the import bill fields blank if not changing.</div>
+      <textarea id="reservesBulkBox" rows="6" placeholder="2026-06,475000000,RBM Reserves Report,300000000,CEIC/NSO
+2026-07,480000000,RBM Reserves Report,,
+2026-08,490000000,RBM Reserves Report,," style="width:100%; padding:10px; border-radius:8px; border:1px solid #ECE4D2; font-family:monospace; font-size:12px;"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="adm-btn" onclick="bulkImportReserves()">Import Rows</button>
+        <span id="reservesBulkProgress" style="font-size:11.5px; color:#9a8f74;"></span>
+      </div>
+      <div id="reservesBulkMsg"></div>
     </div>
 
 
@@ -563,10 +607,11 @@ Paprika,2026,3800,kg,Ministry of Agriculture minimum farm gate prices announceme
   }
 
   // ---- Bulk import helpers ----
-  // Shared pattern used by MPC / Regional / Crop Prices bulk import below:
-  // parse pasted CSV client-side, then save each row by calling the existing
-  // single-entry admin endpoint in sequence. No AI involved — this is a
-  // straightforward paste-many-rows-at-once tool, same as Forex Earners already had.
+  // Shared pattern used by MPC / Regional / Crop Prices / T-Bills / OMO / Reserves
+  // bulk import below: parse pasted CSV client-side, then save each row by
+  // calling the existing single-entry admin endpoint in sequence. No AI
+  // involved — this is a straightforward paste-many-rows-at-once tool, same
+  // as Forex Earners already had.
 
   async function runBulkImport(rawText, parseLine, endpoint, progressElId, msgElId, expectedFormat, reloadFn) {
     const progressEl = document.getElementById(progressElId);
@@ -677,6 +722,114 @@ Paprika,2026,3800,kg,Ministry of Agriculture minimum farm gate prices announceme
       'crop,year,pricePerKg,unit,source',
       () => { document.getElementById('cropBulkBox').value = ''; loadCropPrices(); }
     );
+  }
+
+  // -- T-Bills bulk import: date,tenor,yield,source --
+  function parseTbillBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 3) return null;
+    const date = parts[0].trim();
+    const tenor = parts[1].trim();
+    const yieldVal = parseFloat(parts[2].trim());
+    const source = parts.slice(3).join(',').trim();
+    if (!date || !tenor || isNaN(yieldVal)) return null;
+    return { date, tenor, yield: yieldVal, source };
+  }
+  function bulkImportTbills() {
+    runBulkImport(
+      document.getElementById('tbillBulkBox').value,
+      parseTbillBulkLine,
+      '/api/admin/tbills',
+      'tbillBulkProgress', 'tbillBulkMsg',
+      'date,tenor,yield,source',
+      () => { document.getElementById('tbillBulkBox').value = ''; loadTbills(); }
+    );
+  }
+
+  // -- OMO bulk import: date,action,amount,source --
+  function parseOmoBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 2) return null;
+    const date = parts[0].trim();
+    const action = parts[1].trim();
+    const amountRaw = (parts[2] || '').trim();
+    const amount = amountRaw ? parseFloat(amountRaw) : null;
+    const source = parts.slice(3).join(',').trim();
+    if (!date || !action) return null;
+    return { date, action, amount, source };
+  }
+  function bulkImportOmo() {
+    runBulkImport(
+      document.getElementById('omoBulkBox').value,
+      parseOmoBulkLine,
+      '/api/admin/omo',
+      'omoBulkProgress', 'omoBulkMsg',
+      'date,action,amount,source',
+      () => { document.getElementById('omoBulkBox').value = ''; loadOmo(); }
+    );
+  }
+
+  // -- Foreign Reserves bulk import: month,amountUSD,source,monthlyImportBillUSD,importBillSource --
+  function parseReservesBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 2) return null;
+    const month = parts[0].trim();
+    const amountUSD = parseFloat(parts[1].trim());
+    const source = (parts[2] || '').trim();
+    const monthlyImportBillRaw = (parts[3] || '').trim();
+    const monthlyImportBillUSD = monthlyImportBillRaw ? parseFloat(monthlyImportBillRaw) : null;
+    const importBillSource = parts.slice(4).join(',').trim();
+    if (!month || isNaN(amountUSD)) return null;
+    return { month, amountUSD, source, monthlyImportBillUSD, importBillSource };
+  }
+  function bulkImportReserves() {
+    runBulkImport(
+      document.getElementById('reservesBulkBox').value,
+      parseReservesBulkLine,
+      '/api/admin/reserves',
+      'reservesBulkProgress', 'reservesBulkMsg',
+      'month,amountUSD,source,monthlyImportBillUSD,importBillSource',
+      () => { document.getElementById('reservesBulkBox').value = ''; loadReserves(); }
+    );
+  }
+
+  // -- Yearly Averages bulk import: year,avg,source --
+  // Unlike the endpoints above, yearly averages are saved as one whole array
+  // (POST /api/admin/yearly with { yearlyAverages }), not one row at a time.
+  // So this parses the pasted rows, pushes them onto the same client-side
+  // yearlyRows array that "Add Year" uses, then re-renders the table —
+  // the admin still clicks "Save All Yearly Averages" to persist them.
+  function parseYearlyBulkLine(line) {
+    const parts = line.split(',');
+    if (parts.length < 2) return null;
+    const year = parts[0].trim();
+    const avg = parseFloat(parts[1].trim());
+    const source = parts.slice(2).join(',').trim();
+    if (!year || isNaN(avg)) return null;
+    return { year, avg, source };
+  }
+  function bulkImportYearly() {
+    const raw = document.getElementById('yearlyBulkBox').value.trim();
+    const msgEl = document.getElementById('yearlyBulkMsg');
+    if (!raw) return;
+
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    let added = 0;
+    const badLines = [];
+    lines.forEach((line, i) => {
+      const parsed = parseYearlyBulkLine(line);
+      if (parsed) { yearlyRows.push(parsed); added++; }
+      else badLines.push(i + 1);
+    });
+    renderYearly();
+
+    let summary = `<div class="adm-msg ${added ? 'ok' : 'err'}">Added ${added} row(s) to the table above.`;
+    if (added) summary += ' Click "Save All Yearly Averages" to save them.';
+    if (badLines.length) summary += ` Skipped unparseable line(s): ${badLines.join(', ')}.`;
+    summary += '</div>';
+    msgEl.innerHTML = summary;
+
+    document.getElementById('yearlyBulkBox').value = '';
   }
 
   // ---- Monthly entry ----
